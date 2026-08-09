@@ -91,9 +91,7 @@ def test_seed_script_has_no_delete_path():
         "delete-secret",
         "remove_regions_from_replication",
     ):
-        assert (
-            forbidden not in body
-        ), f"seed_secrets.py must never contain {forbidden!r}"
+        assert forbidden not in body, f"seed_secrets.py must never contain {forbidden!r}"
 
 
 def test_seed_script_creates_and_updates_only():
@@ -104,9 +102,7 @@ def test_seed_script_creates_and_updates_only():
 
 def test_no_secret_deletion_anywhere_in_repo():
     offenders: list[str] = []
-    pattern = re.compile(
-        r"delete[-_]secret|DeleteSecret|force-delete-without-recovery", re.I
-    )
+    pattern = re.compile(r"delete[-_]secret|DeleteSecret|force-delete-without-recovery", re.I)
     for path in _sources():
         text = _read(path)
         lines = text.splitlines()
@@ -127,9 +123,7 @@ def test_no_terraform_destroy_in_ci():
     offenders = []
     for wf in WORKFLOWS.glob("*.y*ml"):
         for n, line in enumerate(_read(wf).splitlines(), start=1):
-            if re.search(r"terraform\s+\S*\s*destroy", line) and not _is_guard_line(
-                line
-            ):
+            if re.search(r"terraform\s+\S*\s*destroy", line) and not _is_guard_line(line):
                 offenders.append(f"{wf.relative_to(REPO)}:{n}")
     assert not offenders, f"terraform destroy must never appear in CI: {offenders}"
 
@@ -163,17 +157,13 @@ def test_protected_resources_have_prevent_destroy(rel, resource):
         pytest.skip(f"{rel} not present yet")
     text = _read(path)
     assert f'resource "{resource}"' in text, f"{resource} not defined in {rel}"
-    assert (
-        "prevent_destroy = true" in text
-    ), f"{resource} in {rel} lacks prevent_destroy"
+    assert "prevent_destroy = true" in text, f"{resource} in {rel} lacks prevent_destroy"
 
 
 def test_ecr_and_s3_are_not_force_deletable():
     ecr = TF / "modules/ecr/main.tf"
     if ecr.exists():
-        assert "force_delete         = false" in _read(
-            ecr
-        ) or "force_delete = false" in _read(ecr)
+        assert "force_delete         = false" in _read(ecr) or "force_delete = false" in _read(ecr)
 
 
 # --------------------------------------------------------------- tagging
@@ -184,9 +174,7 @@ def test_every_environment_tags_project_ekba():
             pytest.skip(f"env {env} not present yet")
         text = _read(main)
         assert 'Project     = "ekba"' in text, f"{env} must tag Project=ekba"
-        assert (
-            "default_tags" in text
-        ), f"{env} must apply default_tags to every resource"
+        assert "default_tags" in text, f"{env} must apply default_tags to every resource"
 
 
 # --------------------------------------------------------------- container hardening
@@ -195,9 +183,7 @@ def test_dockerfile_runs_as_non_root():
     if not df.exists():
         pytest.skip("Dockerfile not present yet")
     text = _read(df)
-    assert re.search(
-        r"^USER\s+10001", text, re.M
-    ), "container must run as a non-root uid"
+    assert re.search(r"^USER\s+10001", text, re.M), "container must run as a non-root uid"
 
 
 def test_dockerfile_has_no_secrets():
@@ -231,3 +217,38 @@ def test_k8s_enforces_non_root_and_readonly_rootfs():
     for line in image_lines:
         assert ":latest" not in line, f"images must be pinned by digest: {line}"
         assert "@sha256:" in line, f"image must be referenced by digest: {line}"
+
+
+# --------------------------------------------------------------- repo integrity
+def test_every_terraform_module_is_tracked_by_git():
+    """A .gitignore rule must never silently exclude source.
+
+    Regression: an unanchored `secrets/` rule matched
+    infra/terraform/modules/secrets/, so the whole module was missing from the
+    repository while working locally. Anyone cloning got a broken configuration.
+    """
+    import shutil
+    import subprocess
+
+    if not (REPO / ".git").exists():
+        pytest.skip("not a git checkout")
+
+    tf_files = sorted(TF.rglob("*.tf")) if TF.exists() else []
+    if not tf_files:
+        pytest.skip("no terraform yet")
+
+    untracked: list[str] = []
+    for path in tf_files:
+        if ".terraform" in path.parts:
+            continue
+        git = shutil.which("git") or "git"
+        result = subprocess.run(  # noqa: S603
+            [git, "check-ignore", "-q", str(path)],
+            cwd=REPO,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode == 0:  # exit 0 means the path IS ignored
+            untracked.append(str(path.relative_to(REPO)))
+
+    assert not untracked, "terraform source excluded by .gitignore:\n" + "\n".join(untracked)

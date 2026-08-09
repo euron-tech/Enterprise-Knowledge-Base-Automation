@@ -21,6 +21,7 @@ SEEDABLE = {
     "DATABASE_URL": "database-url",
     "REDIS_URL": "redis-url",
     "QDRANT_API_KEY": "qdrant-api-key",
+    "QDRANT_URL": "qdrant-url",
     "COGNITO_CLIENT_SECRET": "cognito-client-secret",
     "LANGSMITH_API_KEY": "langsmith-api-key",
 }
@@ -38,7 +39,14 @@ def parse_env(path: Path) -> dict[str, str]:
             continue
         key, _, value = line.partition("=")
         value = value.strip().strip('"').strip("'")
-        if value and not value.startswith("replace-me"):
+        # Skip anything still carrying a placeholder — seeding one would look like
+        # success while leaving the workload with an unusable credential.
+        placeholder = (
+            not value
+            or value.startswith(("replace-me", "YOUR-"))
+            or any(marker in value for marker in ("PLACEHOLDER", "SET_FROM_TERRAFORM"))
+        )
+        if not placeholder:
             out[key.strip()] = value
     return out
 
