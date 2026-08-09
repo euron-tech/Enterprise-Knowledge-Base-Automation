@@ -69,6 +69,24 @@ resource "aws_cloudfront_response_headers_policy" "site" {
   }
 }
 
+# Rewrites extension-less paths to /index.html so client-side routes resolve.
+# Attached only to the S3 behaviour, so an API 401/403/404 is passed through intact.
+resource "aws_cloudfront_function" "spa_router" {
+  name    = "ekba-dev-spa-router"
+  runtime = "cloudfront-js-2.0"
+  comment = "SPA routing without masking API error codes"
+  publish = true
+  code    = <<-JS
+    function handler(event) {
+      var uri = event.request.uri;
+      // A path with a file extension is a real asset; leave it alone.
+      if (uri.indexOf('.') !== -1) { return event.request; }
+      event.request.uri = '/index.html';
+      return event.request;
+    }
+  JS
+}
+
 resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   default_root_object = "index.html"
@@ -95,6 +113,10 @@ resource "aws_cloudfront_distribution" "site" {
 
   # SPA assets.
   default_cache_behavior {
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.spa_router.arn
+    }
     target_origin_id       = "s3-site"
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
@@ -110,6 +132,7 @@ resource "aws_cloudfront_distribution" "site" {
     for_each = [
       "/chat", "/search", "/healthz", "/readyz", "/feedback",
       "/documents", "/documents/*", "/admin/*",
+      "/auth/*", "/me",
     ]
     content {
       path_pattern           = ordered_cache_behavior.value
@@ -128,19 +151,15 @@ resource "aws_cloudfront_distribution" "site" {
     }
   }
 
-  # A SPA owns its routing: unknown paths return index.html, not a 404.
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
-  }
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
-  }
+  # NOTE: deliberately NO custom_error_response.
+  #
+  # custom_error_response is distribution-wide, so rewriting 403 -> 200 /index.html
+  # for SPA routing also rewrote every genuine 403 from the API. A non-admin hitting
+  # /admin/metrics received 200 and an HTML page instead of a denial — authorization
+  # was working, but the edge was hiding it. Found by the RBAC report.
+  #
+  # SPA routing is handled by the viewer-request function below, which never runs
+  # on API paths.
 
   restrictions {
     geo_restriction { restriction_type = "none" }

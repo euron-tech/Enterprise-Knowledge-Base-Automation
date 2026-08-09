@@ -73,6 +73,7 @@ class Settings(BaseSettings):
             "/chat": (20, 60),
             "/search": (40, 60),
             "/documents/upload": (5, 60),
+            "/auth/login": (10, 60),
             "default": (60, 60),
         }
     )

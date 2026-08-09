@@ -77,6 +77,14 @@ resource "aws_cognito_user_pool_client" "this" {
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
+    # USER_PASSWORD_AUTH lets the API exchange credentials for tokens server-side,
+    # so the browser never handles the SRP dance. The password crosses TLS to our
+    # API and then to Cognito, and is never stored. SRP is stronger and is the
+    # v1 hardening item; this is the pragmatic dev path.
+    "ALLOW_USER_PASSWORD_AUTH",
+    # Admin flow requires AWS credentials, so it is reachable only by our own
+    # tooling — used by the seeding and RBAC verification scripts.
+    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
   ]
 
   allowed_oauth_flows                  = ["code"]

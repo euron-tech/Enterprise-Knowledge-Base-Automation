@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.agent.tools import register_all
+from app.api.auth_routes import router as auth_router
 from app.api.middleware import (
     BodySizeLimitMiddleware,
     CorrelationMiddleware,
@@ -135,6 +136,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             },
         )
 
+    app.include_router(auth_router)
     app.include_router(router)
     return app
 
