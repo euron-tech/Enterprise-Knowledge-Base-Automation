@@ -30,26 +30,36 @@ def build_filter(
         raise TenancyError("refusing to build a vector filter without a tenant_id")
 
     must: list[Any] = [
-        qm.FieldCondition(key="tenant_id", match=qm.MatchValue(value=principal.tenant_id))
+        qm.FieldCondition(
+            key="tenant_id", match=qm.MatchValue(value=principal.tenant_id)
+        )
     ]
 
     if department is not None:
         if not principal.may_access(department):
             raise TenancyError(f"principal may not access department {department!r}")
-        must.append(qm.FieldCondition(key="department", match=qm.MatchValue(value=department)))
+        must.append(
+            qm.FieldCondition(key="department", match=qm.MatchValue(value=department))
+        )
     elif not principal.is_admin:
         # Non-admins are always confined to their granted departments.
         if not principal.departments:
             raise TenancyError("principal has no department grants")
         must.append(
-            qm.FieldCondition(key="department", match=qm.MatchAny(any=list(principal.departments)))
+            qm.FieldCondition(
+                key="department", match=qm.MatchAny(any=list(principal.departments))
+            )
         )
 
     if not include_retired:
-        must.append(qm.FieldCondition(key="status", match=qm.MatchValue(value="active")))
+        must.append(
+            qm.FieldCondition(key="status", match=qm.MatchValue(value="active"))
+        )
 
     if document_ids:
-        must.append(qm.FieldCondition(key="document_id", match=qm.MatchAny(any=document_ids)))
+        must.append(
+            qm.FieldCondition(key="document_id", match=qm.MatchAny(any=document_ids))
+        )
 
     return qm.Filter(must=must)
 

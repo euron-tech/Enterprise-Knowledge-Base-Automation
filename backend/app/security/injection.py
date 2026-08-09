@@ -17,14 +17,19 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         "instruction_override",
         re.compile(r"\bignore\s+(all\s+)?(the\s+)?(previous|prior|above)\b", re.I),
     ),
-    ("instruction_override", re.compile(r"\bdisregard\s+(all\s+)?(previous|prior|your)\b", re.I)),
+    (
+        "instruction_override",
+        re.compile(r"\bdisregard\s+(all\s+)?(previous|prior|your)\b", re.I),
+    ),
     (
         "instruction_override",
         re.compile(r"\bforget\s+(everything|all|your\s+instructions)\b", re.I),
     ),
     (
         "role_hijack",
-        re.compile(r"\byou\s+are\s+now\b|\bact\s+as\s+(if|a)\b|\bpretend\s+to\s+be\b", re.I),
+        re.compile(
+            r"\byou\s+are\s+now\b|\bact\s+as\s+(if|a)\b|\bpretend\s+to\s+be\b", re.I
+        ),
     ),
     ("role_hijack", re.compile(r"^\s*(system|assistant)\s*:", re.I | re.M)),
     (
@@ -42,21 +47,32 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("delimiter_escape", re.compile(r"<\|(im_start|im_end|endoftext)\|>", re.I)),
     (
         "tool_injection",
-        re.compile(r"\bcall\s+the\s+\w+\s+tool\b|\btool_call\b|\bfunction_call\b", re.I),
+        re.compile(
+            r"\bcall\s+the\s+\w+\s+tool\b|\btool_call\b|\bfunction_call\b", re.I
+        ),
     ),
-    ("scope_escalation", re.compile(r"\b(tenant_id|department|owner_id)\s*[=:]\s*['\"]?\w+", re.I)),
+    (
+        "scope_escalation",
+        re.compile(r"\b(tenant_id|department|owner_id)\s*[=:]\s*['\"]?\w+", re.I),
+    ),
     ("scope_escalation", re.compile(r"\b(all|other|another)\s+tenants?\b", re.I)),
     (
         "embedded_directive",
-        re.compile(r"\b(AI|assistant|model|chatbot)[,:]?\s+(when|if)\s+(asked|queried)\b", re.I),
+        re.compile(
+            r"\b(AI|assistant|model|chatbot)[,:]?\s+(when|if)\s+(asked|queried)\b", re.I
+        ),
     ),
     (
         "embedded_directive",
-        re.compile(r"\bimportant\s+instructions?\s+for\s+(the\s+)?(AI|assistant|model)\b", re.I),
+        re.compile(
+            r"\bimportant\s+instructions?\s+for\s+(the\s+)?(AI|assistant|model)\b", re.I
+        ),
     ),
     (
         "exfiltration",
-        re.compile(r"\b(send|post|upload|exfiltrate)\b.{0,25}\b(to\s+https?://|webhook)", re.I),
+        re.compile(
+            r"\b(send|post|upload|exfiltrate)\b.{0,25}\b(to\s+https?://|webhook)", re.I
+        ),
     ),
 ]
 
@@ -83,18 +99,20 @@ def normalize(text: str) -> str:
     return text.translate(_ZERO_WIDTH)
 
 
+def _try_decode(blob: str) -> str | None:
+    """Decode one candidate blob. A blob that will not decode is simply not a payload."""
+    pad = "=" * (-len(blob) % 4)
+    try:
+        decoded = base64.b64decode(blob + pad, validate=False).decode("utf-8", "ignore")
+    except Exception:  # noqa: BLE001 - malformed base64 is not an injection attempt
+        return None
+    return decoded if decoded.isprintable() and len(decoded) > 12 else None
+
+
 def _decoded_variants(text: str) -> list[str]:
-    """Surface base64-hidden payloads so patterns can see them."""
-    out: list[str] = []
-    for blob in _B64_BLOB.findall(text)[:5]:
-        try:
-            pad = "=" * (-len(blob) % 4)
-            decoded = base64.b64decode(blob + pad, validate=False).decode("utf-8", "ignore")
-            if decoded.isprintable() and len(decoded) > 12:
-                out.append(decoded)
-        except Exception:  # noqa: BLE001,S112 - undecodable blob is simply not a payload
-            continue
-    return out
+    """Surface base64-hidden payloads so the patterns can see them."""
+    candidates = (_try_decode(blob) for blob in _B64_BLOB.findall(text)[:5])
+    return [c for c in candidates if c]
 
 
 def scan(text: str, *, source: str = "user") -> ScanResult:

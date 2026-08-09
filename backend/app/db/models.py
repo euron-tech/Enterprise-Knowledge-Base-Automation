@@ -46,12 +46,16 @@ class Tenant(Base):
 class User(Base):
     __tablename__ = "users"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)  # Cognito sub
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), index=True)
+    tenant_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("tenants.id"), index=True
+    )
     email: Mapped[str] = mapped_column(String(320))
     role: Mapped[str] = mapped_column(String(20), default="user")  # user | admin
     departments: Mapped[list] = mapped_column(JSON, default=list)
     status: Mapped[str] = mapped_column(String(20), default="active")
-    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
@@ -67,13 +71,19 @@ class Document(Base):
     checksum: Mapped[str] = mapped_column(String(64), index=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     owner_id: Mapped[str] = mapped_column(String(64), index=True)
-    status: Mapped[str] = mapped_column(String(20), default="active")  # active|retired|quarantined
+    status: Mapped[str] = mapped_column(
+        String(20), default="active"
+    )  # active|retired|quarantined
     page_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
-    retired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    retired_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     __table_args__ = (
-        UniqueConstraint("tenant_id", "department", "checksum", name="uq_doc_tenant_dept_checksum"),
+        UniqueConstraint(
+            "tenant_id", "department", "checksum", name="uq_doc_tenant_dept_checksum"
+        ),
         Index("ix_doc_tenant_dept_status", "tenant_id", "department", "status"),
     )
 
@@ -89,8 +99,12 @@ class IngestionJob(Base):
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
     chunks_written: Mapped[int] = mapped_column(Integer, default=0)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
@@ -101,7 +115,9 @@ class Conversation(Base):
     user_id: Mapped[str] = mapped_column(String(64), index=True)
     title: Mapped[str] = mapped_column(String(300), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
-    last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    last_message_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now
+    )
 
 
 class Message(Base):
@@ -162,7 +178,9 @@ class PromptRelease(Base):
     released_by: Mapped[str] = mapped_column(String(64), default="system")
     released_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
-    __table_args__ = (UniqueConstraint("name", "version", name="uq_prompt_name_version"),)
+    __table_args__ = (
+        UniqueConstraint("name", "version", name="uq_prompt_name_version"),
+    )
 
 
 class AuditEvent(Base):

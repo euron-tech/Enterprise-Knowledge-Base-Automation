@@ -59,7 +59,9 @@ async def test_cross_tenant_chunk_never_retrieved(app, client):
         document_id="doc-b",
     )
     r = await client.post(
-        "/search", json={"query": "parental leave weeks"}, headers=auth_headers("user-a")
+        "/search",
+        json={"query": "parental leave weeks"},
+        headers=auth_headers("user-a"),
     )
     assert r.status_code == 200
     assert r.json()["count"] == 0, "tenant A must never see tenant B content"
@@ -117,7 +119,9 @@ async def test_department_isolation_within_tenant(app, client):
         document_id="doc-fin",
     )
     r = await client.post(
-        "/search", json={"query": "travel expense cap dollars"}, headers=auth_headers("user-a")
+        "/search",
+        json={"query": "travel expense cap dollars"},
+        headers=auth_headers("user-a"),
     )
     ids = [x["document_id"] for x in r.json()["results"]]
     assert "doc-fin" not in ids, "hr-only user must not see finance content"
@@ -125,7 +129,11 @@ async def test_department_isolation_within_tenant(app, client):
 
 async def test_admin_sees_own_tenant_only(app, client):
     await seed_chunk(
-        app, tenant_id=TENANT_B, department="hr", text="Globex secret", document_id="doc-b"
+        app,
+        tenant_id=TENANT_B,
+        department="hr",
+        text="Globex secret",
+        document_id="doc-b",
     )
     await seed_chunk(
         app,

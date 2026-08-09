@@ -49,10 +49,14 @@ async def get_principal(
 
     # Grants come from the database, never from the token.
     async with get_sessionmaker()() as session:
-        user = (await session.execute(select(User).where(User.id == sub))).scalar_one_or_none()
+        user = (
+            await session.execute(select(User).where(User.id == sub))
+        ).scalar_one_or_none()
 
     if user is None or user.status != "active":
-        await record(Actions.AUTH_FAILURE, actor_id=sub, outcome="denied", reason="unknown_user")
+        await record(
+            Actions.AUTH_FAILURE, actor_id=sub, outcome="denied", reason="unknown_user"
+        )
         raise AuthenticationError("unknown or inactive user")
 
     principal = Principal(

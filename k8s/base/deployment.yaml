@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ekba-api
+  labels: { app: ekba-api }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: ekba-api }
+  template:
+    metadata:
+      labels: { app: ekba-api }
+    spec:
+      serviceAccountName: ekba-api        # IRSA; one role per workload
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: api
+          # Referenced by digest, never :latest — set by the deploy pipeline.
+          image: ACCOUNT.dkr.ecr.ap-south-1.amazonaws.com/ekba/api@sha256:REPLACED_BY_CI
+          ports: [{ containerPort: 8000, name: http }]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { cpu: "250m", memory: "512Mi" }
+            limits:   { cpu: "1000m", memory: "1Gi" }
+          envFrom:
+            - secretRef: { name: ekba-secrets }   # External Secrets Operator populates this
+          env:
+            - name: ENVIRONMENT
+              value: "prod"
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          startupProbe:
+            httpGet: { path: /healthz, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ekba-api
+spec:
+  selector: { app: ekba-api }
+  ports: [{ port: 80, targetPort: http, name: http }]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ekba-api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: ekba-api }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ekba-api
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: ekba-api }
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }

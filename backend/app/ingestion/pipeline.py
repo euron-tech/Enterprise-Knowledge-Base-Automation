@@ -102,17 +102,28 @@ async def parse_image(data: bytes, mime: str, euri: EuriClient) -> list[Element]
     """The text bridge: vision describes the image, the description gets embedded."""
     b64 = base64.b64encode(data).decode()
     description = await euri.describe_image(b64, mime=mime)
-    return [Element(text=description, modality="image", element_type="image_description")]
+    return [
+        Element(text=description, modality="image", element_type="image_description")
+    ]
 
 
 async def parse_audio(data: bytes, filename: str, euri: EuriClient) -> list[Element]:
     transcript = await euri.transcribe(data, filename=filename)
     if not transcript.strip():
         return []
-    return [Element(text=transcript, modality="audio", element_type="transcript", time_offset_ms=0)]
+    return [
+        Element(
+            text=transcript,
+            modality="audio",
+            element_type="transcript",
+            time_offset_ms=0,
+        )
+    ]
 
 
-async def parse(data: bytes, mime: str, filename: str, euri: EuriClient) -> list[Element]:
+async def parse(
+    data: bytes, mime: str, filename: str, euri: EuriClient
+) -> list[Element]:
     if mime == "application/pdf":
         return parse_pdf(data)
     if mime == "text/csv":
@@ -166,12 +177,16 @@ def chunk_elements(elements: list[Element], max_tokens: int) -> list[Element]:
 
 
 def deterministic_chunk_id(document_id: str, version: int, ordinal: int) -> str:
-    return hashlib.sha256(f"{document_id}|{version}|{ordinal}".encode()).hexdigest()[:32]
+    return hashlib.sha256(f"{document_id}|{version}|{ordinal}".encode()).hexdigest()[
+        :32
+    ]
 
 
 # ------------------------------------------------------------------ pipeline
 class IngestionPipeline:
-    def __init__(self, settings: Settings, euri: EuriClient, vectors: VectorStore) -> None:
+    def __init__(
+        self, settings: Settings, euri: EuriClient, vectors: VectorStore
+    ) -> None:
         self.settings = settings
         self.euri = euri
         self.vectors = vectors
@@ -225,7 +240,9 @@ class IngestionPipeline:
                 warnings.append("chunk truncated by local ceiling")
 
         if not chunks:
-            return IngestResult(document_id, 0, quarantined, len(elements), checksum, 0, warnings)
+            return IngestResult(
+                document_id, 0, quarantined, len(elements), checksum, 0, warnings
+            )
 
         vectors = await self.euri.embed([c.text for c in chunks])
         created_at = datetime.now(UTC).isoformat()
@@ -244,7 +261,8 @@ class IngestionPipeline:
                         "chunk_id": chunk_id,
                         "document_name": filename,
                         "page_number": el.page_number,
-                        "source_uri": source_uri or f"s3://{tenant_id}/{document_id}/v{version}",
+                        "source_uri": source_uri
+                        or f"s3://{tenant_id}/{document_id}/v{version}",
                         "owner_id": owner_id,
                         "tenant_id": tenant_id,
                         "document_version": version,

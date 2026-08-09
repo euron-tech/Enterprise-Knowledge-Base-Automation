@@ -1,0 +1,105 @@
+/* Design tokens extracted from the Euron CRM production bundle.
+   See docs/DESIGN-SYSTEM.md. Do not write raw hex in components. */
+
+:root {
+  /* surfaces — HSL triplets, consumed as hsl(var(--token)) */
+  --background: 215 20% 97%;
+  --foreground: 220 14% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 14% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 14% 11%;
+  --secondary: 215 18% 93%;
+  --secondary-foreground: 220 14% 11%;
+  --muted: 215 18% 93%;
+  --muted-foreground: 220 6% 42%;
+  --accent: 215 18% 93%;
+  --accent-foreground: 220 14% 11%;
+  --destructive: 0 72% 44%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 215 16% 85%;
+  --input: 215 16% 80%;
+  --radius: 0.5rem;
+
+  /* brand + semantic — RGB triplets, consumed as rgb(var(--token)) */
+  --brand: 10 102 194;
+  --brand-foreground: 255 255 255;
+  --success: 5 150 105;
+  --warning: 217 119 6;
+  --info: 124 58 237;
+  --danger: 220 38 38;
+  --neutral: 100 116 139;
+
+  --shadow-sm: 0 1px 2px 0 rgb(20 20 30 / 0.04);
+  --shadow: 0 1px 3px 0 rgb(20 20 30 / 0.06), 0 1px 2px -1px rgb(20 20 30 / 0.05);
+  --shadow-md: 0 4px 12px -2px rgb(20 20 30 / 0.08);
+  --shadow-lg: 0 16px 40px -12px rgb(20 20 30 / 0.14);
+
+  --font-sans: "Geist Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, monospace;
+}
+
+.dark {
+  --background: 200 28% 4%;
+  --foreground: 205 22% 92%;
+  --card: 206 26% 9%;
+  --card-foreground: 205 22% 92%;
+  --popover: 206 26% 9%;
+  --popover-foreground: 205 22% 92%;
+  --secondary: 206 22% 15%;
+  --secondary-foreground: 205 22% 92%;
+  --muted: 206 20% 14%;
+  --muted-foreground: 208 16% 63%;
+  --accent: 206 22% 16%;
+  --accent-foreground: 205 22% 92%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 205 18% 19%;
+  --input: 205 18% 23%;
+
+  /* Brand inverts on the near-black ground — #0A66C2 would fail contrast here.
+     This is deliberate; do not "correct" it back to blue. */
+  --brand: 255 255 252;
+  --brand-foreground: 12 18 24;
+
+  --success: 52 211 153;
+  --warning: 251 191 36;
+  --info: 167 139 250;
+  --danger: 248 113 113;
+  --neutral: 148 163 184;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.6), 0 1px 2px -1px rgb(0 0 0 / 0.5);
+  --shadow-md: 0 4px 16px -2px rgb(0 0 0 / 0.65);
+  --shadow-lg: 0 18px 44px -12px rgb(0 0 0 / 0.75);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  /* the page body never scrolls horizontally */
+  overflow-x: hidden;
+}
+
+code, kbd, pre, .mono { font-family: var(--font-mono); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--brand));
+  outline-offset: 2px;
+}

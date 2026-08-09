@@ -51,6 +51,9 @@ ignore = ["E501", "B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S105", "S106"]
+# Offline scripts, not request-path code: sync file IO and pathlib are fine here.
+"evals/*" = ["ASYNC230", "ASYNC240", "S101"]
+"scripts/*" = ["ASYNC230", "ASYNC240", "S101"]
 "app/core/config.py" = ["S105"]
 
 [tool.black]

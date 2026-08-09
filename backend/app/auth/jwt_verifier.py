@@ -30,7 +30,9 @@ class CognitoVerifier:
 
     def _client(self) -> PyJWKClient:
         if self._jwk_client is None:
-            self._jwk_client = PyJWKClient(f"{self.issuer}/.well-known/jwks.json", cache_keys=True)
+            self._jwk_client = PyJWKClient(
+                f"{self.issuer}/.well-known/jwks.json", cache_keys=True
+            )
         return self._jwk_client
 
     def verify(self, token: str) -> dict[str, Any]:

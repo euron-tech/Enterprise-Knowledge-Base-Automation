@@ -29,6 +29,7 @@ from app.core.errors import GuardrailError
 from app.core.logging import correlation_id_var, get_logger, hash_text, log_event
 from app.db.models import Document, RequestUsage, Tenant
 from app.db.session import get_sessionmaker
+from app.rag import attribution
 from app.rag import citations as citation_gate
 from app.rag.cache import AnswerCache, cache_key
 from app.security import output_guard
@@ -59,7 +60,9 @@ class RagContext:
         self, principal: Principal, query: str, *, department: str | None, top_k: int
     ) -> list[Chunk]:
         vector = await self.euri.embed_one(query)
-        chunks = await self.vectors.search(principal, vector, department=department, top_k=top_k)
+        chunks = await self.vectors.search(
+            principal, vector, department=department, top_k=top_k
+        )
         # Relevance floor + per-document dominance cap, applied on every retrieval.
         threshold = self.settings.relevance_threshold
         kept: list[Chunk] = []
@@ -74,13 +77,17 @@ class RagContext:
             kept.append(c)
         return kept
 
-    async def list_documents(self, principal: Principal, *, limit: int) -> list[dict[str, Any]]:
+    async def list_documents(
+        self, principal: Principal, *, limit: int
+    ) -> list[dict[str, Any]]:
         async with get_sessionmaker()() as s:
             stmt = select(Document).where(
                 Document.tenant_id == principal.tenant_id, Document.status == "active"
             )
             if not principal.is_admin:
-                stmt = stmt.where(Document.department.in_(list(principal.departments) or [""]))
+                stmt = stmt.where(
+                    Document.department.in_(list(principal.departments) or [""])
+                )
             rows = (await s.execute(stmt.limit(limit))).scalars().all()
         return [
             {
@@ -120,7 +127,11 @@ def registry_hash() -> str:
 
 class RagService:
     def __init__(
-        self, settings: Settings, euri: EuriClient, vectors: VectorStore, cache: AnswerCache
+        self,
+        settings: Settings,
+        euri: EuriClient,
+        vectors: VectorStore,
+        cache: AnswerCache,
     ) -> None:
         self.settings = settings
         self.euri = euri
@@ -135,9 +146,13 @@ class RagService:
 
         # ---------------- PRE-FLIGHT (the agent cannot skip any of this) --------------
         if not question or not question.strip():
-            raise GuardrailError("empty question", public_message="A question is required.")
+            raise GuardrailError(
+                "empty question", public_message="A question is required."
+            )
         if len(question) > 4000:
-            raise GuardrailError("question too long", public_message="The question is too long.")
+            raise GuardrailError(
+                "question too long", public_message="The question is too long."
+            )
 
         injection = scan(question, source="user")
         if injection.blocked:
@@ -172,7 +187,9 @@ class RagService:
 
         # ---------------- AGENTIC CORE (the agent decides what to do) -----------------
         state = AgentState(
-            question=question, principal=principal, budget=Budget.from_settings(self.settings)
+            question=question,
+            principal=principal,
+            budget=Budget.from_settings(self.settings),
         )
         ctx = RagContext(self.settings, self.euri, self.vectors, state)
         await AgentGraph(ctx).run(state)
@@ -219,9 +236,25 @@ class RagService:
                 citations = []
                 state.terminate(TerminalReason.REFUSED_INSUFFICIENT_EVIDENCE)
             else:
+                # Gate 1b — attribution. Do not let evidence from one source be
+                # presented as another's just because the question framed it that way.
+                attrib = attribution.check(state.question, state.chunks)
+                if attrib.blocked:
+                    log_event(
+                        logger,
+                        logging.INFO,
+                        "rag.attribution_mismatch",
+                        unknown_entities=list(attrib.unknown_entities),
+                    )
+                    answer = INSUFFICIENT_EVIDENCE
+                    citations = []
+                    state.terminate(TerminalReason.REFUSED_INSUFFICIENT_EVIDENCE)
+
                 # Gate 2 — output guardrails.
                 guarded = output_guard.apply(answer)
-                if guarded.blocked:
+                if attrib.blocked:
+                    pass  # already refused above; skip scoring
+                elif guarded.blocked:
                     guardrail_hits += 1
                     await record(
                         Actions.GUARDRAIL_BLOCK,
@@ -247,7 +280,9 @@ class RagService:
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         model = state.model_used or self.settings.euri_generation_model
-        cost = await self.euri.estimate_cost(model, state.input_tokens, state.output_tokens)
+        cost = await self.euri.estimate_cost(
+            model, state.input_tokens, state.output_tokens
+        )
 
         payload = {
             "answer": answer,
@@ -282,7 +317,9 @@ class RagService:
             await self.cache.set(key, {**payload, "cache_hit": False})
         return payload
 
-    async def _record_usage(self, state: AgentState, route: str, payload: dict[str, Any]) -> None:
+    async def _record_usage(
+        self, state: AgentState, route: str, payload: dict[str, Any]
+    ) -> None:
         try:
             async with get_sessionmaker()() as s:
                 s.add(

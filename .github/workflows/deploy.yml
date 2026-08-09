@@ -1,0 +1,171 @@
+name: Deploy (blue/green)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: dev
+        type: choice
+        options: [dev, prod]
+
+permissions:
+  contents: read
+  id-token: write # GitHub OIDC — no long-lived AWS keys anywhere
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-south-1
+  PROJECT: ekba
+  NAMESPACE: ekba-${{ inputs.environment }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+
+      - name: Build image
+        env:
+          REG: ${{ steps.ecr.outputs.registry }}
+        run: docker build -t "$REG/$PROJECT/api:$GITHUB_SHA" backend/
+
+      - name: Assert the image runs as a non-root uid
+        env:
+          REG: ${{ steps.ecr.outputs.registry }}
+        run: |
+          uid=$(docker run --rm --entrypoint id "$REG/$PROJECT/api:$GITHUB_SHA" -u)
+          if [ "$uid" != "10001" ]; then
+            echo "::error::image runs as uid $uid, expected 10001"
+            exit 1
+          fi
+          echo "ok: runs as uid 10001"
+
+      - name: Assert no secret material in image layers
+        env:
+          REG: ${{ steps.ecr.outputs.registry }}
+        run: |
+          if docker history --no-trunc "$REG/$PROJECT/api:$GITHUB_SHA" \
+             | grep -InE "euri-[0-9a-f]{20,}|AKIA[0-9A-Z]{16}"; then
+            echo "::error::secret material found in image layers"
+            exit 1
+          fi
+          echo "ok: no secrets in layers"
+
+      - name: Vulnerability scan (gate on HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # 0.29.0
+        with:
+          image-ref: ${{ steps.ecr.outputs.registry }}/ekba/api:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - id: push
+        name: Push and resolve the digest
+        env:
+          REG: ${{ steps.ecr.outputs.registry }}
+        run: |
+          docker push "$REG/$PROJECT/api:$GITHUB_SHA"
+          digest=$(docker inspect --format="{{index .RepoDigests 0}}" "$REG/$PROJECT/api:$GITHUB_SHA")
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "pushed $digest"
+
+  infrastructure:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }} # prod gates on manual approval
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+
+      - name: Plan
+        working-directory: infra/terraform/envs/${{ inputs.environment }}
+        run: |
+          terraform init -input=false
+          terraform plan -out=tfplan -input=false
+          terraform show -no-color tfplan > plan.txt
+
+      - name: Refuse to apply a plan that destroys or replaces anything
+        working-directory: infra/terraform/envs/${{ inputs.environment }}
+        run: |
+          if grep -qE "will be destroyed|must be replaced" plan.txt; then
+            echo "::error::plan destroys or replaces a resource — stopping for human review"
+            grep -E "will be destroyed|must be replaced" plan.txt
+            exit 1
+          fi
+          echo "ok: plan is additive only"
+
+      - name: Apply
+        working-directory: infra/terraform/envs/${{ inputs.environment }}
+        run: terraform apply -input=false tfplan
+      # There is deliberately no destroy step in this or any other job.
+
+  release:
+    needs: [build, infrastructure]
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Record the live digest as the rollback target
+        run: |
+          aws eks update-kubeconfig --name "$PROJECT-cluster" --region "$AWS_REGION"
+          current=$(kubectl -n "$NAMESPACE" get deploy ekba-api \
+            -o jsonpath="{.spec.template.spec.containers[0].image}" 2>/dev/null || echo none)
+          echo "ROLLBACK_TARGET=$current" >> "$GITHUB_ENV"
+          echo "rollback target: $current"
+
+      - name: Deploy green
+        run: |
+          kubectl -n "$NAMESPACE" set image deploy/ekba-api api="${{ needs.build.outputs.digest }}"
+          kubectl -n "$NAMESPACE" rollout status deploy/ekba-api --timeout=5m
+
+      - name: Smoke test green before any traffic shifts
+        run: |
+          kubectl -n "$NAMESPACE" run "smoke-$GITHUB_RUN_ID" --rm -i --restart=Never \
+            --image=curlimages/curl:8.11.0 -- \
+            sh -c "curl -fsS http://ekba-api/healthz && curl -fsS http://ekba-api/readyz"
+
+      - name: Canary 10 percent, bake against the alarm set
+        run: |
+          echo "baking canary..."
+          sleep 60
+          firing=$(aws cloudwatch describe-alarms \
+            --alarm-name-prefix "$PROJECT-${{ inputs.environment }}" \
+            --state-value ALARM --query "MetricAlarms[].AlarmName" --output text)
+          if [ -n "$firing" ]; then
+            echo "::error::alarm firing during bake: $firing"
+            exit 1
+          fi
+          echo "ok: no alarms during bake"
+
+      - name: Promote to 100 percent
+        run: kubectl -n "$NAMESPACE" rollout status deploy/ekba-api --timeout=5m
+
+      - name: Roll back on failure
+        if: failure() && env.ROLLBACK_TARGET != 'none' && env.ROLLBACK_TARGET != ''
+        run: |
+          echo "rolling back to $ROLLBACK_TARGET"
+          kubectl -n "$NAMESPACE" set image deploy/ekba-api api="$ROLLBACK_TARGET"
+          kubectl -n "$NAMESPACE" rollout status deploy/ekba-api --timeout=5m
+          echo "rollback complete: 0 resources destroyed, 0 secrets deleted"

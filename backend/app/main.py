@@ -23,7 +23,12 @@ from app.clients.euri import EuriClient
 from app.clients.vectorstore import VectorStore
 from app.core.config import Settings, get_settings
 from app.core.errors import AppError
-from app.core.logging import configure_logging, correlation_id_var, get_logger, log_event
+from app.core.logging import (
+    configure_logging,
+    correlation_id_var,
+    get_logger,
+    log_event,
+)
 from app.core.ratelimit import RateLimiter
 from app.db.session import init_db
 from app.ingestion.pipeline import IngestionPipeline
@@ -105,7 +110,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    async def validation_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
         cid = correlation_id_var.get()
         log_event(logger, logging.INFO, "app.validation_error", path=request.url.path)
         content: dict = {
@@ -120,7 +127,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(Exception)
     async def unhandled_handler(request: Request, exc: Exception) -> JSONResponse:
         cid = correlation_id_var.get()
-        logger.exception("unhandled error", extra={"extra_fields": {"path": request.url.path}})
+        logger.exception(
+            "unhandled error", extra={"extra_fields": {"path": request.url.path}}
+        )
         return JSONResponse(
             status_code=500,
             content={

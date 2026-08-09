@@ -68,7 +68,9 @@ async def readyz(request: Request) -> dict[str, Any]:
 
 # --------------------------------------------------------------------- chat
 @router.post("/chat", tags=["rag"], dependencies=[Depends(rate_limit("/chat"))])
-async def chat(body: ChatRequest, principal: CurrentPrincipal, request: Request) -> dict[str, Any]:
+async def chat(
+    body: ChatRequest, principal: CurrentPrincipal, request: Request
+) -> dict[str, Any]:
     return await request.app.state.rag.answer(body.question, principal, route="/chat")
 
 
@@ -89,7 +91,9 @@ async def search(
         raise AuthorizationError("department not granted")
 
     ctx = request.app.state.rag_context_factory()
-    chunks = await ctx.retrieve(principal, body.query, department=body.department, top_k=body.top_k)
+    chunks = await ctx.retrieve(
+        principal, body.query, department=body.department, top_k=body.top_k
+    )
     return {
         "results": [
             {
@@ -131,7 +135,9 @@ async def upload_document(
 
     data = await file.read()
     settings = request.app.state.settings
-    safe_name, mime = validate_upload(data, file.filename or "upload", settings.max_upload_bytes)
+    safe_name, mime = validate_upload(
+        data, file.filename or "upload", settings.max_upload_bytes
+    )
 
     pipeline = request.app.state.ingestion
     checksum = __import__("hashlib").sha256(data).hexdigest()
@@ -167,7 +173,10 @@ async def upload_document(
             owner_id=principal.user_id,
         )
         job = IngestionJob(
-            document_id=doc.id, tenant_id=principal.tenant_id, state="running", stage="parse"
+            document_id=doc.id,
+            tenant_id=principal.tenant_id,
+            state="running",
+            stage="parse",
         )
         s.add_all([doc, job])
         await s.commit()
@@ -224,7 +233,9 @@ async def upload_document(
 
 
 @router.get("/documents", tags=["documents"])
-async def list_documents(principal: CurrentPrincipal, request: Request) -> dict[str, Any]:
+async def list_documents(
+    principal: CurrentPrincipal, request: Request
+) -> dict[str, Any]:
     ctx = request.app.state.rag_context_factory()
     docs = await ctx.list_documents(principal, limit=100)
     return {"documents": docs, "count": len(docs)}
@@ -238,7 +249,8 @@ async def delete_document(
         doc = (
             await s.execute(
                 select(Document).where(
-                    Document.id == document_id, Document.tenant_id == principal.tenant_id
+                    Document.id == document_id,
+                    Document.tenant_id == principal.tenant_id,
                 )
             )
         ).scalar_one_or_none()
@@ -256,7 +268,9 @@ async def delete_document(
                 outcome="denied",
                 reason="not_owner",
             )
-            raise AuthorizationError("only the owner or an admin may delete this document")
+            raise AuthorizationError(
+                "only the owner or an admin may delete this document"
+            )
 
         # Audit first, then remove vectors, then mark the row.
         await record(
@@ -280,7 +294,9 @@ async def delete_document(
 
 # --------------------------------------------------------------------- feedback
 @router.post("/feedback", tags=["feedback"])
-async def feedback(body: FeedbackRequest, principal: CurrentPrincipal) -> dict[str, str]:
+async def feedback(
+    body: FeedbackRequest, principal: CurrentPrincipal
+) -> dict[str, str]:
     async with get_sessionmaker()() as s:
         s.add(
             UserFeedback(
@@ -297,7 +313,9 @@ async def feedback(body: FeedbackRequest, principal: CurrentPrincipal) -> dict[s
 
 
 # --------------------------------------------------------------------- admin
-@router.get("/admin/metrics", tags=["admin"], dependencies=[Depends(require_role("admin"))])
+@router.get(
+    "/admin/metrics", tags=["admin"], dependencies=[Depends(require_role("admin"))]
+)
 async def admin_metrics(principal: CurrentPrincipal) -> dict[str, Any]:
     await record(
         Actions.ADMIN_METRICS,
@@ -313,7 +331,10 @@ async def admin_metrics(principal: CurrentPrincipal) -> dict[str, Any]:
             await s.execute(
                 select(func.count())
                 .select_from(Document)
-                .where(Document.tenant_id == principal.tenant_id, Document.status == "active")
+                .where(
+                    Document.tenant_id == principal.tenant_id,
+                    Document.status == "active",
+                )
             )
         ).scalar_one()
 
@@ -334,7 +355,11 @@ async def admin_metrics(principal: CurrentPrincipal) -> dict[str, Any]:
         "latency_p95_ms": pct(0.95),
         "refusals": sum(1 for r in rows if r.terminal_reason.startswith("refused")),
         "limit_exceeded": sum(1 for r in rows if r.terminal_reason == "limit_exceeded"),
-        "avg_iterations": round(sum(r.iterations for r in rows) / total, 2) if total else 0,
-        "avg_tool_calls": round(sum(r.tool_calls for r in rows) / total, 2) if total else 0,
+        "avg_iterations": (
+            round(sum(r.iterations for r in rows) / total, 2) if total else 0
+        ),
+        "avg_tool_calls": (
+            round(sum(r.tool_calls for r in rows) / total, 2) if total else 0
+        ),
         "refusal_message": INSUFFICIENT_EVIDENCE,
     }

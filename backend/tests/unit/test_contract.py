@@ -81,7 +81,9 @@ def test_confidence_penalised_by_stripped_citations():
 
 
 async def test_fabricated_only_citation_becomes_refusal(app, client, fake_euri):
-    await seed_chunk(app, tenant_id=TENANT_A, department="hr", text="Leave is 18 weeks.")
+    await seed_chunk(
+        app, tenant_id=TENANT_A, department="hr", text="Leave is 18 weeks."
+    )
     fake_euri.queue_tool_call("hybrid_search", {"query": "leave"})
     fake_euri.queue_stop()
     fake_euri.queue_answer("Leave is unlimited [totally-invented-chunk].")
@@ -95,12 +97,16 @@ async def test_fabricated_only_citation_becomes_refusal(app, client, fake_euri):
 
 # ------------------------------------------------------------------ contract
 async def test_all_contract_fields_on_answer(app, client, fake_euri):
-    cid = await seed_chunk(app, tenant_id=TENANT_A, department="hr", text="Leave is 18 weeks.")
+    cid = await seed_chunk(
+        app, tenant_id=TENANT_A, department="hr", text="Leave is 18 weeks."
+    )
     fake_euri.queue_tool_call("hybrid_search", {"query": "leave"})
     fake_euri.queue_stop()
     fake_euri.queue_answer(f"Leave is 18 weeks. [{cid}]")
     body = (
-        await client.post("/chat", json={"question": "leave?"}, headers=auth_headers("user-a"))
+        await client.post(
+            "/chat", json={"question": "leave?"}, headers=auth_headers("user-a")
+        )
     ).json()
     assert CONTRACT_FIELDS <= set(body)
 
@@ -108,7 +114,9 @@ async def test_all_contract_fields_on_answer(app, client, fake_euri):
 async def test_all_contract_fields_on_refusal(app, client):
     body = (
         await client.post(
-            "/chat", json={"question": "unknowable question"}, headers=auth_headers("user-a")
+            "/chat",
+            json={"question": "unknowable question"},
+            headers=auth_headers("user-a"),
         )
     ).json()
     assert CONTRACT_FIELDS <= set(body)
@@ -117,7 +125,9 @@ async def test_all_contract_fields_on_refusal(app, client):
 
 
 async def test_all_contract_fields_on_cache_hit(app, client, fake_euri):
-    cid = await seed_chunk(app, tenant_id=TENANT_A, department="hr", text="Leave is 18 weeks.")
+    cid = await seed_chunk(
+        app, tenant_id=TENANT_A, department="hr", text="Leave is 18 weeks."
+    )
     for _ in range(2):
         fake_euri.queue_tool_call("hybrid_search", {"query": "leave"})
         fake_euri.queue_stop()
@@ -257,7 +267,9 @@ async def test_image_is_bridged_to_text(app):
         owner_id="user-a",
     )
     assert result.chunks_written == 1
-    assert any("workflow" in t.lower() for call in app.state.euri.embed_calls for t in call)
+    assert any(
+        "workflow" in t.lower() for call in app.state.euri.embed_calls for t in call
+    )
 
 
 # ------------------------------------------------------------------ api surface
@@ -301,7 +313,9 @@ async def test_rate_limit_enforced_on_chat(client, settings):
 
 async def test_unknown_field_rejected(client):
     r = await client.post(
-        "/chat", json={"question": "hi", "role": "admin"}, headers=auth_headers("user-a")
+        "/chat",
+        json={"question": "hi", "role": "admin"},
+        headers=auth_headers("user-a"),
     )
     assert r.status_code == 422
 

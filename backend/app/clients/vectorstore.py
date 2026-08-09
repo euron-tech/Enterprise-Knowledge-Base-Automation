@@ -43,7 +43,9 @@ class Chunk:
 
 
 class VectorStore:
-    def __init__(self, settings: Settings, client: AsyncQdrantClient | None = None) -> None:
+    def __init__(
+        self, settings: Settings, client: AsyncQdrantClient | None = None
+    ) -> None:
         self.settings = settings
         self.collection = settings.qdrant_collection
         if client is not None:
@@ -79,10 +81,16 @@ class VectorStore:
         qpoints = []
         for p in points:
             payload = p["payload"]
-            missing = [f for f in MANDATORY_PAYLOAD_FIELDS if payload.get(f) in (None, "")]
+            missing = [
+                f for f in MANDATORY_PAYLOAD_FIELDS if payload.get(f) in (None, "")
+            ]
             if missing:
-                raise ValidationError(f"vector payload missing mandatory fields: {missing}")
-            qpoints.append(qm.PointStruct(id=p["id"], vector=p["vector"], payload=payload))
+                raise ValidationError(
+                    f"vector payload missing mandatory fields: {missing}"
+                )
+            qpoints.append(
+                qm.PointStruct(id=p["id"], vector=p["vector"], payload=payload)
+            )
         if qpoints:
             await self.client.upsert(collection_name=self.collection, points=qpoints)
         return len(qpoints)
@@ -108,7 +116,9 @@ class VectorStore:
         )
         return [self._to_chunk(h.payload or {}, h.score) for h in hits.points]
 
-    async def fetch_by_ids(self, principal: Principal, chunk_ids: list[str]) -> list[Chunk]:
+    async def fetch_by_ids(
+        self, principal: Principal, chunk_ids: list[str]
+    ) -> list[Chunk]:
         flt = build_filter(principal)
         assert_tenant_scoped(flt, principal.tenant_id)
         combined = qm.Filter(
@@ -129,7 +139,8 @@ class VectorStore:
         flt = build_filter(principal, include_retired=True, document_ids=[document_id])
         assert_tenant_scoped(flt, principal.tenant_id)
         await self.client.delete(
-            collection_name=self.collection, points_selector=qm.FilterSelector(filter=flt)
+            collection_name=self.collection,
+            points_selector=qm.FilterSelector(filter=flt),
         )
 
     @staticmethod

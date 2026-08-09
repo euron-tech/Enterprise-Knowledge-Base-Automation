@@ -76,7 +76,9 @@ async def test_role_filtering_hides_tools_from_wrong_role(_register_tools):
     user_tools = {s.name for s in REGISTRY.for_role("user")}
     assert "hybrid_search" in user_tools
     schemas = REGISTRY.schemas_for("user")
-    assert all(s["function"]["parameters"]["additionalProperties"] is False for s in schemas)
+    assert all(
+        s["function"]["parameters"]["additionalProperties"] is False for s in schemas
+    )
 
 
 async def test_invalid_arguments_produce_typed_error(_register_tools):
@@ -148,7 +150,9 @@ def test_wall_clock_cap_enforced():
 def test_context_chunk_cap_enforced(principal_a):
     from app.clients.vectorstore import Chunk
 
-    state = AgentState(question="q", principal=principal_a, budget=_budget(max_context_chunks=3))
+    state = AgentState(
+        question="q", principal=principal_a, budget=_budget(max_context_chunks=3)
+    )
     chunks = [
         Chunk(
             chunk_id=f"c{i}",
@@ -197,13 +201,21 @@ def test_loop_detection(principal_a):
 
 # ------------------------------------------------------- calculator sandbox
 async def test_calculator_is_sandboxed(_register_tools, principal_a):
-    for evil in ["__import__('os').system('ls')", "open('/etc/passwd')", "1+1; import os"]:
+    for evil in [
+        "__import__('os').system('ls')",
+        "open('/etc/passwd')",
+        "1+1; import os",
+    ]:
         with pytest.raises(ToolError):
-            await REGISTRY.dispatch("calculator", {"expression": evil}, principal_a, None)
+            await REGISTRY.dispatch(
+                "calculator", {"expression": evil}, principal_a, None
+            )
 
 
 async def test_calculator_computes(_register_tools, principal_a):
-    out = await REGISTRY.dispatch("calculator", {"expression": "18 * 5 + 2"}, principal_a, None)
+    out = await REGISTRY.dispatch(
+        "calculator", {"expression": "18 * 5 + 2"}, principal_a, None
+    )
     assert out["result"] == 92.0
 
 
@@ -226,7 +238,9 @@ async def test_agent_uses_tool_then_answers(app, client, fake_euri):
     fake_euri.queue_answer(f"Parental leave is 18 weeks at full pay. [{cid}]")
 
     r = await client.post(
-        "/chat", json={"question": "How much parental leave?"}, headers=auth_headers("user-a")
+        "/chat",
+        json={"question": "How much parental leave?"},
+        headers=auth_headers("user-a"),
     )
     body = r.json()
     assert body["terminal_reason"] == "answered"
@@ -237,7 +251,9 @@ async def test_agent_uses_tool_then_answers(app, client, fake_euri):
 async def test_refuse_tool_produces_exact_refusal(app, client, fake_euri):
     fake_euri.queue_tool_call("refuse", {"reason": "out_of_scope"})
     r = await client.post(
-        "/chat", json={"question": "What is the weather?"}, headers=auth_headers("user-a")
+        "/chat",
+        json={"question": "What is the weather?"},
+        headers=auth_headers("user-a"),
     )
     body = r.json()
     assert body["answer"] == INSUFFICIENT_EVIDENCE
@@ -245,9 +261,13 @@ async def test_refuse_tool_produces_exact_refusal(app, client, fake_euri):
 
 
 async def test_clarification_path(app, client, fake_euri):
-    fake_euri.queue_tool_call("request_clarification", {"question": "Which department?"})
+    fake_euri.queue_tool_call(
+        "request_clarification", {"question": "Which department?"}
+    )
     r = await client.post(
-        "/chat", json={"question": "What is the policy?"}, headers=auth_headers("user-a")
+        "/chat",
+        json={"question": "What is the policy?"},
+        headers=auth_headers("user-a"),
     )
     body = r.json()
     assert body["terminal_reason"] == "clarification_requested"
@@ -257,7 +277,9 @@ async def test_clarification_path(app, client, fake_euri):
 async def test_unregistered_tool_call_is_handled_not_executed(app, client, fake_euri):
     fake_euri.queue_tool_call("run_shell_command", {"cmd": "rm -rf /"})
     fake_euri.queue_stop()
-    r = await client.post("/chat", json={"question": "hello"}, headers=auth_headers("user-a"))
+    r = await client.post(
+        "/chat", json={"question": "hello"}, headers=auth_headers("user-a")
+    )
     assert r.status_code == 200
     assert r.json()["answer"] == INSUFFICIENT_EVIDENCE
 
@@ -270,10 +292,14 @@ async def test_model_supplied_department_cannot_widen_scope(app, client, fake_eu
         text="Finance travel cap is 500 dollars",
         document_id="doc-fin",
     )
-    fake_euri.queue_tool_call("hybrid_search", {"query": "travel cap", "department": "finance"})
+    fake_euri.queue_tool_call(
+        "hybrid_search", {"query": "travel cap", "department": "finance"}
+    )
     fake_euri.queue_stop()
     r = await client.post(
-        "/chat", json={"question": "What is the travel cap?"}, headers=auth_headers("user-a")
+        "/chat",
+        json={"question": "What is the travel cap?"},
+        headers=auth_headers("user-a"),
     )
     body = r.json()
     assert body["retrieved_chunks"] == []

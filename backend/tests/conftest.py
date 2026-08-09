@@ -57,7 +57,10 @@ class FakeEuri:
         raw = [0.0] * self.dims
         words = re.findall(r"[a-z0-9]+", text.lower())
         for w in words:
-            idx = int.from_bytes(hashlib.sha256(w.encode()).digest()[:4], "big") % self.dims
+            idx = (
+                int.from_bytes(hashlib.sha256(w.encode()).digest()[:4], "big")
+                % self.dims
+            )
             sign = 1.0 if idx % 2 == 0 else -1.0
             raw[idx] += sign
         if not any(raw):
@@ -65,7 +68,9 @@ class FakeEuri:
         norm = math.sqrt(sum(x * x for x in raw)) or 1.0
         return [x / norm for x in raw]
 
-    async def embed(self, texts: list[str], *, dimensions: int | None = None) -> list[list[float]]:
+    async def embed(
+        self, texts: list[str], *, dimensions: int | None = None
+    ) -> list[list[float]]:
         from app.core.errors import ValidationError
 
         for t in texts:
@@ -74,7 +79,9 @@ class FakeEuri:
         self.embed_calls.append(texts)
         return [self._vec(t) for t in texts]
 
-    async def embed_one(self, text: str, *, dimensions: int | None = None) -> list[float]:
+    async def embed_one(
+        self, text: str, *, dimensions: int | None = None
+    ) -> list[float]:
         return (await self.embed([text]))[0]
 
     async def chat(self, messages: list[dict[str, Any]], **kwargs: Any) -> ChatResult:
@@ -118,7 +125,9 @@ class FakeEuri:
 
     def queue_stop(self) -> None:
         self.chat_queue.append(
-            ChatResult(content=None, tool_calls=[], model="fake-planner", finish_reason="stop")
+            ChatResult(
+                content=None, tool_calls=[], model="fake-planner", finish_reason="stop"
+            )
         )
 
     def queue_answer(self, text: str) -> None:
@@ -218,7 +227,9 @@ async def app(settings, fake_euri, monkeypatch):
     application.state.cache = cache
     application.state.rag = RagService(settings, fake_euri, vectors, cache)
     application.state.ingestion = IngestionPipeline(settings, fake_euri, vectors)
-    application.state.rag_context_factory = lambda: RagContext(settings, fake_euri, vectors)
+    application.state.rag_context_factory = lambda: RagContext(
+        settings, fake_euri, vectors
+    )
 
     await db_session.init_db()
     await vectors.ensure_collection()

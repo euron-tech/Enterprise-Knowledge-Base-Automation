@@ -10,9 +10,18 @@ _SECRET_PATTERNS = [
     ("euri_key", re.compile(r"euri-[0-9a-f]{32,}", re.I)),
     ("github_token", re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}")),
     ("private_key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
-    ("jwt", re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}")),
-    ("conn_string", re.compile(r"(?i)(postgres|mysql|redis|mongodb)(\+\w+)?://[^\s]{8,}")),
-    ("generic_secret", re.compile(r"(?i)\b(api[_-]?key|password|secret)\b\s*[:=]\s*\S{8,}")),
+    (
+        "jwt",
+        re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),
+    ),
+    (
+        "conn_string",
+        re.compile(r"(?i)(postgres|mysql|redis|mongodb)(\+\w+)?://[^\s]{8,}"),
+    ),
+    (
+        "generic_secret",
+        re.compile(r"(?i)\b(api[_-]?key|password|secret)\b\s*[:=]\s*\S{8,}"),
+    ),
 ]
 
 _PII_PATTERNS = [
@@ -65,7 +74,10 @@ def apply(text: str, *, redact_pii: bool = False) -> GuardOutcome:
 
     if detect_prompt_leak(text):
         return GuardOutcome(
-            text="", blocked=True, redactions=["system_prompt"], reason="system_prompt_leak"
+            text="",
+            blocked=True,
+            redactions=["system_prompt"],
+            reason="system_prompt_leak",
         )
 
     for name, pattern in _SECRET_PATTERNS:

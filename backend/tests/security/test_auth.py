@@ -13,7 +13,9 @@ pytestmark = pytest.mark.security
 
 
 async def test_valid_token_is_accepted(client):
-    r = await client.post("/chat", json={"question": "hello"}, headers=auth_headers("user-a"))
+    r = await client.post(
+        "/chat", json={"question": "hello"}, headers=auth_headers("user-a")
+    )
     assert r.status_code != 401
 
 
@@ -31,13 +33,17 @@ async def test_malformed_token_rejected(client):
 
 
 async def test_non_bearer_scheme_rejected(client):
-    r = await client.post("/chat", json={"question": "hi"}, headers={"Authorization": "Basic abc"})
+    r = await client.post(
+        "/chat", json={"question": "hi"}, headers={"Authorization": "Basic abc"}
+    )
     assert r.status_code == 401
 
 
 async def test_expired_token_rejected(client):
     r = await client.post(
-        "/chat", json={"question": "hi"}, headers=auth_headers("user-a", expires_in=-7200)
+        "/chat",
+        json={"question": "hi"},
+        headers=auth_headers("user-a", expires_in=-7200),
     )
     assert r.status_code == 401
 
@@ -53,7 +59,9 @@ async def test_wrong_issuer_rejected(client):
 
 async def test_wrong_audience_rejected(client):
     r = await client.post(
-        "/chat", json={"question": "hi"}, headers=auth_headers("user-a", audience="other-client")
+        "/chat",
+        json={"question": "hi"},
+        headers=auth_headers("user-a", audience="other-client"),
     )
     assert r.status_code == 401
 
@@ -108,12 +116,16 @@ async def test_signature_from_wrong_key_rejected(settings):
 
 
 async def test_unknown_user_rejected(client):
-    r = await client.post("/chat", json={"question": "hi"}, headers=auth_headers("no-such-user"))
+    r = await client.post(
+        "/chat", json={"question": "hi"}, headers=auth_headers("no-such-user")
+    )
     assert r.status_code == 401
 
 
 async def test_disabled_user_rejected(client):
-    r = await client.post("/chat", json={"question": "hi"}, headers=auth_headers("user-disabled"))
+    r = await client.post(
+        "/chat", json={"question": "hi"}, headers=auth_headers("user-disabled")
+    )
     assert r.status_code == 401
 
 

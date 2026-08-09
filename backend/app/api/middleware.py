@@ -26,7 +26,9 @@ CORRELATION_HEADER = "X-Correlation-ID"
 class CorrelationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):  # type: ignore[no-untyped-def]
         cid = request.headers.get(CORRELATION_HEADER) or str(uuid.uuid4())
-        cid = "".join(ch for ch in cid if ch.isalnum() or ch in "-_")[:64] or str(uuid.uuid4())
+        cid = "".join(ch for ch in cid if ch.isalnum() or ch in "-_")[:64] or str(
+            uuid.uuid4()
+        )
         correlation_id_var.set(cid)
         tenant_id_var.set("-")
         user_id_var.set("-")
@@ -61,7 +63,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         h["X-Frame-Options"] = "DENY"
         h["Referrer-Policy"] = "no-referrer"
         h["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        h["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+        h["Content-Security-Policy"] = (
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+        )
         h["Cache-Control"] = "no-store"
         if self.settings.is_prod:
             h["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
@@ -75,7 +79,11 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):  # type: ignore[no-untyped-def]
         is_upload = request.url.path.endswith("/upload")
-        limit = self.settings.max_upload_bytes if is_upload else self.settings.max_body_bytes
+        limit = (
+            self.settings.max_upload_bytes
+            if is_upload
+            else self.settings.max_body_bytes
+        )
         declared = request.headers.get("content-length")
         if declared and declared.isdigit() and int(declared) > limit:
             return JSONResponse(

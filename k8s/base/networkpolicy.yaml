@@ -1,0 +1,26 @@
+# Default-deny egress. This is also the SSRF backstop for the agent: even if a
+# tool were compromised, it cannot reach an arbitrary host.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ekba-api-egress
+spec:
+  podSelector:
+    matchLabels: { app: ekba-api }
+  policyTypes: [Egress, Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: { app: ingress-nginx }
+      ports: [{ protocol: TCP, port: 8000 }]
+  egress:
+    # DNS
+    - to: [{ namespaceSelector: {}, podSelector: { matchLabels: { k8s-app: kube-dns } } }]
+      ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+    # Qdrant + Redis inside the cluster
+    - to: [{ podSelector: { matchLabels: { app: qdrant } } }]
+      ports: [{ protocol: TCP, port: 6333 }]
+    # HTTPS to the approved managed endpoints only (Euri gateway, AWS, Supabase).
+    # Host-level restriction is enforced at the egress gateway / VPC endpoints.
+    - to: [{ ipBlock: { cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16] } }]
+      ports: [{ protocol: TCP, port: 443 }]

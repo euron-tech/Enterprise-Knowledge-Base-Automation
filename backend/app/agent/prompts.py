@@ -46,6 +46,12 @@ CITATIONS
 - If the evidence does not support an answer, reply with exactly:
 {INSUFFICIENT_EVIDENCE}
 
+ATTRIBUTION
+- If the question names a specific organisation, handbook, system or document, answer
+  only if the evidence actually comes from that source. Check the document names in the
+  evidence. If the evidence comes from a different source, do not present it as though
+  it were the one asked about — refuse instead.
+
 LANGUAGE
 - Answer in the same language as the question.
 
