@@ -59,7 +59,10 @@ class CognitoVerifier:
         return self._decode(token, key)
 
     def _verify_dev(self, token: str) -> dict[str, Any]:
-        """Dev only: tokens signed by the local test key. Never reachable in prod."""
+        """Tests only. Settings validation forbids auth_dev_mode outside tests, and
+        this second check means a config regression still cannot open the door."""
+        if self.settings.environment != "test":
+            raise AuthenticationError("dev auth is not available in this environment")
         from app.auth.dev_keys import dev_public_key
 
         return self._decode(token, dev_public_key())

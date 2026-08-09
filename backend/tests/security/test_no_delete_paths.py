@@ -28,25 +28,35 @@ def _read(p: Path) -> str:
     return p.read_text(encoding="utf-8", errors="replace")
 
 
-def _is_guard_line(line: str) -> bool:
-    """A line that searches for, or errors on, a forbidden pattern is a guard.
+def _is_guard_line(line: str, context: str = "") -> bool:
+    """A line that searches for, errors on, or DENIES a forbidden action is a guard.
 
-    The CI safety job and this test both have to name the forbidden strings in order
-    to detect them. Detecting a prohibition is the opposite of committing a violation.
+    Three legitimate reasons to name a forbidden string:
+      1. a grep that detects it (the CI safety job, this test)
+      2. an error message that reports it
+      3. an IAM Deny statement that prohibits it
+
+    `context` is the surrounding lines: an action inside a Deny block or a
+    `forbidden_actions` list is a control, even though the deny keyword is not on
+    the same line.
     """
     stripped = line.strip()
     if stripped.startswith(("#", "//", "*")):
         return True
-    return any(
+    if any(
         marker in line
-        for marker in (
-            "grep",
-            "::error::",
-            "must never",
-            "is forbidden",
-            "prevent_destroy",
-        )
+        for marker in ("grep", "::error::", "must never", "is forbidden", "prevent_destroy")
+    ):
+        return True
+    return any(
+        marker in context
+        for marker in ('effect    = "Deny"', 'effect = "Deny"', "forbidden_actions", '"Deny"')
     )
+
+
+def _window(lines: list[str], n: int, radius: int = 12) -> str:
+    """The lines around a match, used to judge whether it sits inside a Deny block."""
+    return "\n".join(lines[max(0, n - 1 - radius) : n + radius])
 
 
 def _sources() -> list[Path]:
@@ -104,7 +114,7 @@ def test_no_secret_deletion_anywhere_in_repo():
             n = text[: match.start()].count("\n") + 1
             snippet = lines[n - 1]
             # An explicit IAM Deny on DeleteSecret is a control, not a violation.
-            if "Deny" in snippet or _is_guard_line(snippet):
+            if _is_guard_line(snippet, _window(lines, n)):
                 continue
             offenders.append(f"{path.relative_to(REPO)}:{n}  {snippet.strip()[:80]}")
     assert not offenders, "secret deletion found:\n" + "\n".join(offenders)

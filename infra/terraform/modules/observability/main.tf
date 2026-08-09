@@ -72,19 +72,19 @@ resource "aws_cloudwatch_log_metric_filter" "server_errors" {
 locals {
   alarms = {
     high_5xx = {
-      metric = "HttpServerErrors", threshold = 10, evaluation = 2, period = 300
+      metric      = "HttpServerErrors", threshold = 10, evaluation = 2, period = 300
       description = "elevated 5xx rate"
     }
     auth_failure_spike = {
-      metric = "AuthenticationFailures", threshold = 50, evaluation = 2, period = 300
+      metric      = "AuthenticationFailures", threshold = 50, evaluation = 2, period = 300
       description = "authentication failure spike"
     }
     agent_budget_breaches = {
-      metric = "AgentBudgetExceeded", threshold = 20, evaluation = 2, period = 900
+      metric      = "AgentBudgetExceeded", threshold = 20, evaluation = 2, period = 900
       description = "agent loop budget breaches"
     }
     guardrail_block_spike = {
-      metric = "GuardrailBlocks", threshold = 100, evaluation = 2, period = 900
+      metric      = "GuardrailBlocks", threshold = 100, evaluation = 2, period = 900
       description = "guardrail block spike"
     }
   }

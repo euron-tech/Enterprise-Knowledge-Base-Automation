@@ -1,9 +1,11 @@
 """Single settings object. Nothing else reads os.environ."""
 
+from __future__ import annotations
+
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,7 +14,7 @@ class Settings(BaseSettings):
         env_file=(".env", "../.env"), env_file_encoding="utf-8", extra="ignore"
     )
 
-    environment: Literal["dev", "test", "prod"] = "dev"
+    environment: Literal["dev", "test", "prod"] = "test"
     debug: bool = True
     log_level: str = "INFO"
 
@@ -44,7 +46,7 @@ class Settings(BaseSettings):
     cognito_region: str = "ap-south-1"
     cognito_user_pool_id: str = ""
     cognito_client_id: str = ""
-    auth_dev_mode: bool = True
+    auth_dev_mode: bool = False  # locally signed tokens; tests only
 
     s3_bucket_documents: str = "ekba-dev-documents"
     s3_bucket_derived: str = "ekba-dev-derived"
@@ -73,6 +75,43 @@ class Settings(BaseSettings):
             "default": (60, 60),
         }
     )
+
+    @model_validator(mode="after")
+    def _reject_local_defaults_outside_tests(self) -> Settings:
+        """Fail closed. A deployed environment must never run on local scaffolding.
+
+        Local affordances (SQLite, in-memory Qdrant, locally signed dev tokens) exist
+        only for tests. If any of them reached dev or prod, the system would appear to
+        work while storing nothing durable and accepting self-signed tokens.
+        """
+        if self.environment == "test":
+            return self
+
+        problems: list[str] = []
+        if self.auth_dev_mode:
+            problems.append(
+                "AUTH_DEV_MODE=true accepts locally signed tokens — never outside tests"
+            )
+        if self.database_url.startswith("sqlite"):
+            problems.append("DATABASE_URL is SQLite — set a PostgreSQL URL")
+        if self.qdrant_url in (":memory:", ""):
+            problems.append("QDRANT_URL is in-memory — set a real Qdrant endpoint")
+        if not self.euri_api_key.get_secret_value():
+            problems.append("EURI_API_KEY is empty")
+        if not self.cognito_user_pool_id or not self.cognito_client_id:
+            problems.append("COGNITO_USER_POOL_ID / COGNITO_CLIENT_ID are required")
+        if self.environment == "prod":
+            if self.debug:
+                problems.append("DEBUG must be false in prod")
+            if "localhost" in self.cors_origins:
+                problems.append("CORS_ORIGINS contains localhost in prod")
+
+        if problems:
+            raise ValueError(
+                f"invalid configuration for environment={self.environment}:\n  - "
+                + "\n  - ".join(problems)
+            )
+        return self
 
     @property
     def is_prod(self) -> bool:
