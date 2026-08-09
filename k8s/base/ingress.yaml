@@ -1,0 +1,35 @@
+# Internet-facing ALB for the API.
+#
+# TLS terminates at CloudFront, which is the only public entry point. The ALB
+# itself speaks HTTP and is reachable only by CloudFront — see the security group
+# note below. The browser never talks to the ALB directly, so there is no
+# mixed-content problem and no ACM certificate or custom domain is required yet.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ekba-api
+  namespace: ekba-dev
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/load-balancer-attributes: >-
+      idle_timeout.timeout_seconds=120,routing.http.drop_invalid_header_fields.enabled=true
+    alb.ingress.kubernetes.io/tags: Project=ekba,Environment=dev,ManagedBy=k8s
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          # Only the API surface is exposed. Everything else is served by
+          # CloudFront from the static bucket.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ekba-api
+                port:
+                  number: 80

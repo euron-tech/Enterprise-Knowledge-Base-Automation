@@ -1,0 +1,18 @@
+{
+  "retrieval_precision": 1.0,
+  "retrieval_hit_rate": 1.0,
+  "answer_relevance": 1.0,
+  "faithfulness": 1.0,
+  "citation_correctness": 1.0,
+  "refusal_correctness": 0.8889,
+  "injection_block_rate": 1.0,
+  "latency_p50_ms": 4469,
+  "latency_p95_ms": 12072,
+  "total_input_tokens": 93804,
+  "total_output_tokens": 2448,
+  "estimated_cost_usd": 0.207192,
+  "tool_selection_accuracy": 1.0,
+  "avg_tool_calls": 1.6,
+  "avg_iterations": 2.17,
+  "terminal_reason_correctness": 0.9667
+}

@@ -1,0 +1,90 @@
+name: PR
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,parsers]"
+      - name: Lint
+        run: ruff check app tests evals scripts
+      - name: Format
+        run: black --check app tests evals scripts
+      - name: Unit, security and agent suites
+        run: pytest tests -q --cov=app --cov-report=term --cov-fail-under=80
+      - name: Evaluation harness (offline, no gateway cost)
+        run: python evals/run_eval.py
+
+  safety-invariants:
+    # The absolute destructive-action rules, checked mechanically on every PR.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Forbid infrastructure teardown commands
+        run: |
+          if grep -rInE "terraform[[:space:]]+destroy" .github/ scripts/ 2>/dev/null | grep -v "^[^:]*:[0-9]*: *#"; then
+            echo "::error::terraform destroy must never appear in CI or scripts"
+            exit 1
+          fi
+          echo "ok: no teardown commands found"
+      - name: Forbid Secrets Manager removal
+        run: |
+          hits=$(grep -rInE "delete[-_]secret|DeleteSecret|force-delete-without-recovery" \
+            --include="*.py" --include="*.yml" --include="*.yaml" --include="*.tf" --include="*.sh" . \
+            | grep -v "test_no_delete_paths.py" | grep -v "Deny" || true)
+          if [ -n "$hits" ]; then
+            echo "::error::secret deletion is forbidden"
+            echo "$hits"
+            exit 1
+          fi
+          echo "ok: no secret deletion"
+      - name: prevent_destroy on protected resources
+        run: |
+          for f in infra/terraform/modules/secrets/main.tf \
+                   infra/terraform/modules/s3/main.tf \
+                   infra/terraform/modules/ecr/main.tf; do
+            grep -q "prevent_destroy = true" "$f" || {
+              echo "::error::$f lacks prevent_destroy"
+              exit 1
+            }
+          done
+          echo "ok: prevent_destroy present on every protected resource"
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@83373cf2f8c4db6e24b41c1a9b086bb9619e9cd3 # v2.3.7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  terraform:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev, prod]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+      - run: terraform -chdir=infra/terraform/envs/${{ matrix.env }} fmt -check
+      - run: terraform -chdir=infra/terraform/envs/${{ matrix.env }} init -backend=false
+      - run: terraform -chdir=infra/terraform/envs/${{ matrix.env }} validate

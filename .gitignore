@@ -5,7 +5,7 @@
 .env.*
 !.env.example
 *.env
-secrets/
+/secrets/
 *.pem
 *.key
 *.p12
@@ -15,7 +15,7 @@ id_rsa*
 kubeconfig
 *.kubeconfig
 .aws/
-credentials
+/credentials
 
 # Terraform — state and variable files carry secrets
 *.tfstate
@@ -24,7 +24,7 @@ credentials
 *.tfvars.json
 !*.tfvars.example
 .terraform/
-.terraform.lock.hcl
+# .terraform.lock.hcl is intentionally COMMITTED: it pins provider versions
 crash.log
 crash.*.log
 tfplan
@@ -40,7 +40,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
+/build/
 develop-eggs/
 dist/
 downloads/
@@ -108,14 +108,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-logs/
-tmp/
-temp/
+/logs/
+/tmp/
+/temp/
 .scratch/
 
 # Data — never commit tenant documents or vectors
-data/
-uploads/
+/data/
+/uploads/
 *.sqlite
 *.sqlite3
 *.db
@@ -128,3 +128,10 @@ postgres_data/
 *.tar.gz
 *.zip
 sbom.json
+
+# local venv + db
+backend/.venv/
+*.db
+
+# Python build metadata
+*.egg-info/

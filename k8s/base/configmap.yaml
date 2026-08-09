@@ -1,0 +1,48 @@
+# Non-secret configuration. Secrets come from Secrets Manager via ExternalSecret;
+# these are public identifiers and tunables, so they live here in plain sight.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ekba-config
+  namespace: ekba-dev
+data:
+  ENVIRONMENT: "dev"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+
+  # Cognito ids are public identifiers, not credentials.
+  COGNITO_REGION: "ap-south-1"
+  COGNITO_USER_POOL_ID: "ap-south-1_WQ0BZ2ao7"
+  COGNITO_CLIENT_ID: "1lafenrluohml7uudqfml3c5gr"
+  AUTH_DEV_MODE: "false"
+
+  AWS_REGION: "ap-south-1"
+  S3_BUCKET_DOCUMENTS: "ekba-dev-documents"
+  S3_BUCKET_DERIVED: "ekba-dev-derived"
+
+  QDRANT_COLLECTION: "ekba_chunks_dev"
+
+  CORS_ORIGINS: "http://localhost:5173,http://localhost:3000"
+  # The ALB hostname must be trusted: CloudFront sends the origin hostname as Host
+  # by default, and TrustedHostMiddleware answers 400 for anything unlisted.
+  TRUSTED_HOSTS: "localhost,127.0.0.1,ekba-api,ekba-api.ekba-dev.svc.cluster.local,k8s-ekbadev-ekbaapi-30493287d6-328465403.ap-south-1.elb.amazonaws.com"
+
+  EURI_BASE_URL: "https://api.euron.one/api/v1/euri"
+  EURI_EMBEDDING_MODEL: "gemini-embedding-2-preview"
+  EURI_EMBEDDING_DIMENSIONS: "1536"
+  EURI_GENERATION_MODEL: "gpt-4.1"
+  EURI_PLANNER_MODEL: "gpt-4.1-mini"
+  EURI_FALLBACK_MODEL: "gpt-4.1-mini"
+  EURI_VISION_MODEL: "gpt-4.1"
+  EURI_TRANSCRIBE_MODEL: "whisper-large-v3-turbo"
+
+  AGENT_MAX_ITERATIONS: "8"
+  AGENT_MAX_TOOL_CALLS: "12"
+  AGENT_MAX_CALLS_PER_TOOL: "4"
+  AGENT_MAX_CONTEXT_CHUNKS: "40"
+  AGENT_MAX_TOKENS: "60000"
+  AGENT_WALL_CLOCK_SECONDS: "45"
+
+  RETRIEVAL_TOP_K: "8"
+  RELEVANCE_THRESHOLD: "0.35"
+  MAX_CHUNK_TOKENS: "1500"
