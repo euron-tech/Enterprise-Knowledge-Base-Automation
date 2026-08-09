@@ -13,14 +13,14 @@ resource "aws_ecr_repository" "this" {
   for_each             = toset(var.repositories)
   name                 = "${var.project}/${each.value}"
   image_tag_mutability = "IMMUTABLE"
-  force_delete         = false
+  force_delete         = true # TEARDOWN
 
   image_scanning_configuration { scan_on_push = true }
   encryption_configuration { encryption_type = "AES256" }
   tags = var.tags
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false # TEARDOWN: re-enable before any redeploy
   }
 }
 

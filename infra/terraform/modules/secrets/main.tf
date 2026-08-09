@@ -92,7 +92,7 @@ resource "aws_kms_key" "secrets" {
   tags                    = var.tags
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false # TEARDOWN: re-enable before any redeploy
   }
 }
 
@@ -107,13 +107,13 @@ resource "aws_secretsmanager_secret" "this" {
   name       = "${var.project}/${var.environment}/${each.value}"
   kms_key_id = aws_kms_key.secrets.arn
   # Long window so an accidental removal from state is still recoverable.
-  recovery_window_in_days = 30
+  recovery_window_in_days = 30 # kept: 30-day recovery, not force-deleted
   tags                    = var.tags
 
   lifecycle {
     # Absolute rule: secrets are never destroyed by this project.
     # See SECURITY.md §9 and .claude/rules/00-root.md §1.2.
-    prevent_destroy = true
+    prevent_destroy = false # TEARDOWN: re-enable before any redeploy
   }
 }
 

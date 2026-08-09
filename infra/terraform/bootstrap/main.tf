@@ -38,7 +38,7 @@ resource "aws_s3_bucket" "tfstate" {
   tags   = local.tags
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false # TEARDOWN: re-enable before any redeploy
   }
 }
 
@@ -74,7 +74,7 @@ resource "aws_dynamodb_table" "tflock" {
   tags = local.tags
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false # TEARDOWN: re-enable before any redeploy
   }
 }
 

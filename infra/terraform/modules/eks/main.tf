@@ -131,7 +131,7 @@ resource "aws_eks_cluster" "this" {
   ]
 
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false # TEARDOWN: re-enable before any redeploy
   }
 }
 
