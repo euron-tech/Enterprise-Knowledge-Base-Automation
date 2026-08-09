@@ -32,22 +32,38 @@ spec:
             requests: { cpu: "250m", memory: "512Mi" }
             limits:   { cpu: "1000m", memory: "1Gi" }
           envFrom:
-            - secretRef: { name: ekba-secrets }   # External Secrets Operator populates this
-          env:
-            - name: ENVIRONMENT
-              value: "prod"
+            # Non-secret configuration and public identifiers.
+            - configMapRef: { name: ekba-config }
+            # Credentials, populated by the External Secrets Operator from
+            # AWS Secrets Manager. Never baked into the image.
+            - secretRef: { name: ekba-secrets }
+          # kubelet probes by pod IP, so the Host header would be "10.42.x.y:8000"
+          # and TrustedHostMiddleware answers 400. Sending an explicit trusted Host
+          # keeps the probes working without loosening trusted-host validation.
           livenessProbe:
-            httpGet: { path: /healthz, port: http }
+            httpGet:
+              path: /healthz
+              port: http
+              httpHeaders: [{ name: Host, value: ekba-api }]
             initialDelaySeconds: 15
             periodSeconds: 20
+            timeoutSeconds: 5
           readinessProbe:
-            httpGet: { path: /readyz, port: http }
+            httpGet:
+              path: /readyz
+              port: http
+              httpHeaders: [{ name: Host, value: ekba-api }]
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 10
           startupProbe:
-            httpGet: { path: /healthz, port: http }
+            httpGet:
+              path: /healthz
+              port: http
+              httpHeaders: [{ name: Host, value: ekba-api }]
             failureThreshold: 30
             periodSeconds: 5
+            timeoutSeconds: 5
           volumeMounts:
             - { name: tmp, mountPath: /tmp }
       volumes:

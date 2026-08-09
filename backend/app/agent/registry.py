@@ -64,9 +64,7 @@ class ToolRegistry:
 
     def register(self, spec: ToolSpec) -> None:
         if spec.read_only is not True:
-            raise ValueError(
-                f"tool {spec.name} is not read-only; write tools are forbidden"
-            )
+            raise ValueError(f"tool {spec.name} is not read-only; write tools are forbidden")
 
         # A model must never be able to name its own tenant, department, role or owner.
         fields = set(spec.args_schema.model_fields)
@@ -113,9 +111,7 @@ class ToolRegistry:
     ) -> Any:
         spec = self.get(name)
         if principal.role not in spec.allowed_roles:
-            raise ToolError(
-                "NOT_AUTHORIZED", f"role {principal.role!r} may not call {name!r}"
-            )
+            raise ToolError("NOT_AUTHORIZED", f"role {principal.role!r} may not call {name!r}")
         args = self.validate_args(spec, raw_args)
         # Principal is injected here, server-side, from the verified JWT.
         return await spec.handler(args=args, principal=principal, ctx=ctx)

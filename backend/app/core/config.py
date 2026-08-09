@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     cache_ttl_seconds: int = 86_400
 
     qdrant_url: str = ":memory:"
+    qdrant_api_key: SecretStr = SecretStr("")
     qdrant_collection: str = "ekba_chunks_dev"
 
     # Euri gateway
@@ -96,6 +97,8 @@ class Settings(BaseSettings):
             problems.append("DATABASE_URL is SQLite — set a PostgreSQL URL")
         if self.qdrant_url in (":memory:", ""):
             problems.append("QDRANT_URL is in-memory — set a real Qdrant endpoint")
+        elif self.qdrant_url.startswith("https://") and not self.qdrant_api_key.get_secret_value():
+            problems.append("QDRANT_API_KEY is required for a remote Qdrant endpoint")
         if not self.euri_api_key.get_secret_value():
             problems.append("EURI_API_KEY is empty")
         if not self.cognito_user_pool_id or not self.cognito_client_id:

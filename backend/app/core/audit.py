@@ -70,6 +70,4 @@ async def record(
                 s.add(event)
                 await s.commit()
     except Exception as exc:  # noqa: BLE001 - auditing must never break the request
-        log_event(
-            logger, logging.ERROR, "audit.write_failed", error=str(exc), action=action
-        )
+        log_event(logger, logging.ERROR, "audit.write_failed", error=str(exc), action=action)

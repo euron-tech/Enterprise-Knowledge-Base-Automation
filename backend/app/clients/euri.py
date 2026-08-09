@@ -46,9 +46,7 @@ class ChatResult:
 
 
 class EuriClient:
-    def __init__(
-        self, settings: Settings, client: httpx.AsyncClient | None = None
-    ) -> None:
+    def __init__(self, settings: Settings, client: httpx.AsyncClient | None = None) -> None:
         self.settings = settings
         self._client = client
         self._price_cache: dict[str, dict[str, float]] = {}
@@ -87,14 +85,8 @@ class EuriClient:
             raise UpstreamError(f"gateway rate limited: {body}")
         if status >= 500:
             lowered = body.lower()
-            if (
-                '"400' in lowered
-                or "invalid argument" in lowered
-                or "invalid model" in lowered
-            ):
-                raise UpstreamPermanentError(
-                    f"gateway {status} wrapping upstream 4xx: {body}"
-                )
+            if '"400' in lowered or "invalid argument" in lowered or "invalid model" in lowered:
+                raise UpstreamPermanentError(f"gateway {status} wrapping upstream 4xx: {body}")
             raise UpstreamError(f"gateway {status}: {body}")
         raise UpstreamError(f"gateway {status}: {body}")
 
@@ -131,28 +123,20 @@ class EuriClient:
                 }
             self._price_fetched_at = time.time()
         except Exception as exc:  # noqa: BLE001 - pricing must not break a request
-            log_event(
-                logger, logging.WARNING, "euri.price_fetch_failed", error=str(exc)
-            )
+            log_event(logger, logging.WARNING, "euri.price_fetch_failed", error=str(exc))
         return self._price_cache
 
-    async def estimate_cost(
-        self, model: str, input_tokens: int, output_tokens: int
-    ) -> float:
+    async def estimate_cost(self, model: str, input_tokens: int, output_tokens: int) -> float:
         prices = await self.prices()
         p = prices.get(model, {"input": 0.0, "output": 0.0})
         return (input_tokens * p["input"] + output_tokens * p["output"]) / 1_000_000
 
     # ---------------------------------------------------------------- embeddings
-    async def embed(
-        self, texts: list[str], *, dimensions: int | None = None
-    ) -> list[list[float]]:
+    async def embed(self, texts: list[str], *, dimensions: int | None = None) -> list[list[float]]:
         """Embed text. TEXT ONLY — see the guard below and INTEGRATIONS-EURI.md §3."""
         if not texts:
             return []
-        dims = min(
-            dimensions or self.settings.euri_embedding_dimensions, MAX_DIMENSIONS
-        )
+        dims = min(dimensions or self.settings.euri_embedding_dimensions, MAX_DIMENSIONS)
 
         for t in texts:
             if not isinstance(t, str):
@@ -180,9 +164,7 @@ class EuriClient:
             out.extend(item["embedding"] for item in items)
         return out
 
-    async def embed_one(
-        self, text: str, *, dimensions: int | None = None
-    ) -> list[float]:
+    async def embed_one(self, text: str, *, dimensions: int | None = None) -> list[float]:
         vectors = await self.embed([text], dimensions=dimensions)
         return vectors[0]
 
@@ -258,9 +240,7 @@ class EuriClient:
             "/audio/transcriptions",
             files={"file": (filename, audio, "application/octet-stream")},
             data={"model": self.settings.euri_transcribe_model},
-            headers={
-                "Authorization": f"Bearer {self.settings.euri_api_key.get_secret_value()}"
-            },
+            headers={"Authorization": f"Bearer {self.settings.euri_api_key.get_secret_value()}"},
             timeout=httpx.Timeout(connect=5.0, read=180.0, write=120.0, pool=5.0),
         )
         self._classify(resp)

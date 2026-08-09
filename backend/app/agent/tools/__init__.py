@@ -30,12 +30,8 @@ class SearchArgs(_Args):
     # Searches automatically span exactly the departments the caller is granted.
 
 
-async def _search(
-    args: Any, principal: Principal, ctx: Any, mode: str
-) -> dict[str, Any]:
-    chunks = await ctx.retrieve(
-        principal, args.query, department=None, top_k=args.top_k
-    )
+async def _search(args: Any, principal: Principal, ctx: Any, mode: str) -> dict[str, Any]:
+    chunks = await ctx.retrieve(principal, args.query, department=None, top_k=args.top_k)
     ctx.state.add_evidence(chunks, mode)
     return {
         "mode": mode,
@@ -53,9 +49,7 @@ async def _search(
     }
 
 
-async def semantic_search(
-    *, args: Any, principal: Principal, ctx: Any
-) -> dict[str, Any]:
+async def semantic_search(*, args: Any, principal: Principal, ctx: Any) -> dict[str, Any]:
     return await _search(args, principal, ctx, "semantic_search")
 
 
@@ -63,9 +57,7 @@ async def hybrid_search(*, args: Any, principal: Principal, ctx: Any) -> dict[st
     return await _search(args, principal, ctx, "hybrid_search")
 
 
-async def keyword_search(
-    *, args: Any, principal: Principal, ctx: Any
-) -> dict[str, Any]:
+async def keyword_search(*, args: Any, principal: Principal, ctx: Any) -> dict[str, Any]:
     return await _search(args, principal, ctx, "keyword_search")
 
 
@@ -84,9 +76,7 @@ class ListDocsArgs(_Args):
     limit: int = Field(default=25, ge=1, le=100)
 
 
-async def list_documents(
-    *, args: Any, principal: Principal, ctx: Any
-) -> dict[str, Any]:
+async def list_documents(*, args: Any, principal: Principal, ctx: Any) -> dict[str, Any]:
     docs = await ctx.list_documents(principal, limit=args.limit)
     return {"documents": docs, "count": len(docs)}
 
@@ -95,9 +85,7 @@ class DocMetaArgs(_Args):
     document_id: str = Field(min_length=1, max_length=64)
 
 
-async def get_document_metadata(
-    *, args: Any, principal: Principal, ctx: Any
-) -> dict[str, Any]:
+async def get_document_metadata(*, args: Any, principal: Principal, ctx: Any) -> dict[str, Any]:
     meta = await ctx.document_metadata(principal, args.document_id)
     if meta is None:
         raise ToolError("NOT_FOUND", "no such document in your scope")
@@ -140,9 +128,7 @@ async def calculator(*, args: Any, principal: Principal, ctx: Any) -> dict[str, 
     try:
         tree = ast.parse(args.expression, mode="eval")
     except SyntaxError as exc:
-        raise ToolError(
-            "INVALID_ARGUMENTS", "not a valid arithmetic expression"
-        ) from exc
+        raise ToolError("INVALID_ARGUMENTS", "not a valid arithmetic expression") from exc
     value = _safe_eval(tree)
     return {"expression": args.expression, "result": value}
 
@@ -170,9 +156,7 @@ async def date_resolver(*, args: Any, principal: Principal, ctx: Any) -> dict[st
     }
 
 
-async def department_scope(
-    *, args: Any, principal: Principal, ctx: Any
-) -> dict[str, Any]:
+async def department_scope(*, args: Any, principal: Principal, ctx: Any) -> dict[str, Any]:
     """Reports the caller's own scope only — never what other departments exist."""
     return {"departments": list(principal.departments), "role": principal.role}
 
@@ -186,9 +170,7 @@ class ClarifyArgs(_Args):
     question: str = Field(min_length=1, max_length=300)
 
 
-async def request_clarification(
-    *, args: Any, principal: Principal, ctx: Any
-) -> dict[str, Any]:
+async def request_clarification(*, args: Any, principal: Principal, ctx: Any) -> dict[str, Any]:
     ctx.state.clarification = args.question
     return {"clarification_requested": args.question}
 

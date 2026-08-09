@@ -110,9 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_handler(
-        request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
         cid = correlation_id_var.get()
         log_event(logger, logging.INFO, "app.validation_error", path=request.url.path)
         content: dict = {
@@ -127,9 +125,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(Exception)
     async def unhandled_handler(request: Request, exc: Exception) -> JSONResponse:
         cid = correlation_id_var.get()
-        logger.exception(
-            "unhandled error", extra={"extra_fields": {"path": request.url.path}}
-        )
+        logger.exception("unhandled error", extra={"extra_fields": {"path": request.url.path}})
         return JSONResponse(
             status_code=500,
             content={

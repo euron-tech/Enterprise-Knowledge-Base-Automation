@@ -60,9 +60,7 @@ class RagContext:
         self, principal: Principal, query: str, *, department: str | None, top_k: int
     ) -> list[Chunk]:
         vector = await self.euri.embed_one(query)
-        chunks = await self.vectors.search(
-            principal, vector, department=department, top_k=top_k
-        )
+        chunks = await self.vectors.search(principal, vector, department=department, top_k=top_k)
         # Relevance floor + per-document dominance cap, applied on every retrieval.
         threshold = self.settings.relevance_threshold
         kept: list[Chunk] = []
@@ -77,17 +75,13 @@ class RagContext:
             kept.append(c)
         return kept
 
-    async def list_documents(
-        self, principal: Principal, *, limit: int
-    ) -> list[dict[str, Any]]:
+    async def list_documents(self, principal: Principal, *, limit: int) -> list[dict[str, Any]]:
         async with get_sessionmaker()() as s:
             stmt = select(Document).where(
                 Document.tenant_id == principal.tenant_id, Document.status == "active"
             )
             if not principal.is_admin:
-                stmt = stmt.where(
-                    Document.department.in_(list(principal.departments) or [""])
-                )
+                stmt = stmt.where(Document.department.in_(list(principal.departments) or [""]))
             rows = (await s.execute(stmt.limit(limit))).scalars().all()
         return [
             {
@@ -146,13 +140,9 @@ class RagService:
 
         # ---------------- PRE-FLIGHT (the agent cannot skip any of this) --------------
         if not question or not question.strip():
-            raise GuardrailError(
-                "empty question", public_message="A question is required."
-            )
+            raise GuardrailError("empty question", public_message="A question is required.")
         if len(question) > 4000:
-            raise GuardrailError(
-                "question too long", public_message="The question is too long."
-            )
+            raise GuardrailError("question too long", public_message="The question is too long.")
 
         injection = scan(question, source="user")
         if injection.blocked:
@@ -280,9 +270,7 @@ class RagService:
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         model = state.model_used or self.settings.euri_generation_model
-        cost = await self.euri.estimate_cost(
-            model, state.input_tokens, state.output_tokens
-        )
+        cost = await self.euri.estimate_cost(model, state.input_tokens, state.output_tokens)
 
         payload = {
             "answer": answer,
@@ -317,9 +305,7 @@ class RagService:
             await self.cache.set(key, {**payload, "cache_hit": False})
         return payload
 
-    async def _record_usage(
-        self, state: AgentState, route: str, payload: dict[str, Any]
-    ) -> None:
+    async def _record_usage(self, state: AgentState, route: str, payload: dict[str, Any]) -> None:
         try:
             async with get_sessionmaker()() as s:
                 s.add(

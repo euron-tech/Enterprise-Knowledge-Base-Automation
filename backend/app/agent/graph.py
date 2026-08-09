@@ -82,18 +82,14 @@ class AgentGraph:
         state.plan_history.append(
             {
                 "iteration": state.budget.iterations,
-                "tool_calls": [
-                    t.get("function", {}).get("name") for t in result.tool_calls
-                ],
+                "tool_calls": [t.get("function", {}).get("name") for t in result.tool_calls],
                 "finish_reason": result.finish_reason,
             }
         )
         # Presence of tool_calls is the signal — finish_reason is unreliable here.
         return result if result.has_tool_calls else None
 
-    async def _execute_calls(
-        self, state: AgentState, calls: list, messages: list
-    ) -> bool:
+    async def _execute_calls(self, state: AgentState, calls: list, messages: list) -> bool:
         """Returns True when the loop should stop (refusal or clarification)."""
         for call in calls:
             fn = call.get("function", {})
@@ -116,9 +112,7 @@ class AgentGraph:
 
             try:
                 state.budget.charge_tool(name)
-                result = await self.registry.dispatch(
-                    name, args, state.principal, self.ctx
-                )
+                result = await self.registry.dispatch(name, args, state.principal, self.ctx)
                 outcome = "ok"
             except ToolError as exc:
                 result = exc.as_result()
@@ -189,9 +183,7 @@ class AgentGraph:
             }
         )
 
-    async def _audit_tool_error(
-        self, state: AgentState, name: str, exc: ToolError
-    ) -> None:
+    async def _audit_tool_error(self, state: AgentState, name: str, exc: ToolError) -> None:
         from app.core.audit import Actions, record
 
         if exc.code == "PRINCIPAL_OVERRIDE":

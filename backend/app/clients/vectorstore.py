@@ -43,9 +43,7 @@ class Chunk:
 
 
 class VectorStore:
-    def __init__(
-        self, settings: Settings, client: AsyncQdrantClient | None = None
-    ) -> None:
+    def __init__(self, settings: Settings, client: AsyncQdrantClient | None = None) -> None:
         self.settings = settings
         self.collection = settings.qdrant_collection
         if client is not None:
@@ -53,7 +51,13 @@ class VectorStore:
         elif settings.qdrant_url in (":memory:", "", None):
             self.client = AsyncQdrantClient(location=":memory:")
         else:
-            self.client = AsyncQdrantClient(url=settings.qdrant_url)
+            # Qdrant Cloud rejects an unauthenticated request with 403; the key was
+            # never wired in because local tests only ever used :memory:.
+            self.client = AsyncQdrantClient(
+                url=settings.qdrant_url,
+                api_key=settings.qdrant_api_key.get_secret_value() or None,
+                timeout=30,
+            )
 
     async def ensure_collection(self) -> None:
         existing = await self.client.get_collections()
@@ -81,16 +85,10 @@ class VectorStore:
         qpoints = []
         for p in points:
             payload = p["payload"]
-            missing = [
-                f for f in MANDATORY_PAYLOAD_FIELDS if payload.get(f) in (None, "")
-            ]
+            missing = [f for f in MANDATORY_PAYLOAD_FIELDS if payload.get(f) in (None, "")]
             if missing:
-                raise ValidationError(
-                    f"vector payload missing mandatory fields: {missing}"
-                )
-            qpoints.append(
-                qm.PointStruct(id=p["id"], vector=p["vector"], payload=payload)
-            )
+                raise ValidationError(f"vector payload missing mandatory fields: {missing}")
+            qpoints.append(qm.PointStruct(id=p["id"], vector=p["vector"], payload=payload))
         if qpoints:
             await self.client.upsert(collection_name=self.collection, points=qpoints)
         return len(qpoints)
@@ -116,9 +114,7 @@ class VectorStore:
         )
         return [self._to_chunk(h.payload or {}, h.score) for h in hits.points]
 
-    async def fetch_by_ids(
-        self, principal: Principal, chunk_ids: list[str]
-    ) -> list[Chunk]:
+    async def fetch_by_ids(self, principal: Principal, chunk_ids: list[str]) -> list[Chunk]:
         flt = build_filter(principal)
         assert_tenant_scoped(flt, principal.tenant_id)
         combined = qm.Filter(

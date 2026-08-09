@@ -27,9 +27,7 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ),
     (
         "role_hijack",
-        re.compile(
-            r"\byou\s+are\s+now\b|\bact\s+as\s+(if|a)\b|\bpretend\s+to\s+be\b", re.I
-        ),
+        re.compile(r"\byou\s+are\s+now\b|\bact\s+as\s+(if|a)\b|\bpretend\s+to\s+be\b", re.I),
     ),
     ("role_hijack", re.compile(r"^\s*(system|assistant)\s*:", re.I | re.M)),
     (
@@ -47,9 +45,7 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("delimiter_escape", re.compile(r"<\|(im_start|im_end|endoftext)\|>", re.I)),
     (
         "tool_injection",
-        re.compile(
-            r"\bcall\s+the\s+\w+\s+tool\b|\btool_call\b|\bfunction_call\b", re.I
-        ),
+        re.compile(r"\bcall\s+the\s+\w+\s+tool\b|\btool_call\b|\bfunction_call\b", re.I),
     ),
     (
         "scope_escalation",
@@ -58,21 +54,15 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("scope_escalation", re.compile(r"\b(all|other|another)\s+tenants?\b", re.I)),
     (
         "embedded_directive",
-        re.compile(
-            r"\b(AI|assistant|model|chatbot)[,:]?\s+(when|if)\s+(asked|queried)\b", re.I
-        ),
+        re.compile(r"\b(AI|assistant|model|chatbot)[,:]?\s+(when|if)\s+(asked|queried)\b", re.I),
     ),
     (
         "embedded_directive",
-        re.compile(
-            r"\bimportant\s+instructions?\s+for\s+(the\s+)?(AI|assistant|model)\b", re.I
-        ),
+        re.compile(r"\bimportant\s+instructions?\s+for\s+(the\s+)?(AI|assistant|model)\b", re.I),
     ),
     (
         "exfiltration",
-        re.compile(
-            r"\b(send|post|upload|exfiltrate)\b.{0,25}\b(to\s+https?://|webhook)", re.I
-        ),
+        re.compile(r"\b(send|post|upload|exfiltrate)\b.{0,25}\b(to\s+https?://|webhook)", re.I),
     ),
 ]
 

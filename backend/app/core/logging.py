@@ -13,12 +13,8 @@ from typing import Any
 correlation_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
     "correlation_id", default="-"
 )
-tenant_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "tenant_id", default="-"
-)
-user_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "user_id", default="-"
-)
+tenant_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("tenant_id", default="-")
+user_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("user_id", default="-")
 
 _SECRET_PATTERNS = [
     re.compile(r"euri-[0-9a-f]{32,}", re.I),
