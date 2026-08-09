@@ -23,7 +23,9 @@ data:
   QDRANT_COLLECTION: "ekba_chunks_dev"
 
   CORS_ORIGINS: "http://localhost:5173,http://localhost:3000"
-  TRUSTED_HOSTS: "localhost,127.0.0.1,ekba-api,ekba-api.ekba-dev.svc.cluster.local"
+  # The ALB hostname must be trusted: CloudFront sends the origin hostname as Host
+  # by default, and TrustedHostMiddleware answers 400 for anything unlisted.
+  TRUSTED_HOSTS: "localhost,127.0.0.1,ekba-api,ekba-api.ekba-dev.svc.cluster.local,k8s-ekbadev-ekbaapi-30493287d6-328465403.ap-south-1.elb.amazonaws.com"
 
   EURI_BASE_URL: "https://api.euron.one/api/v1/euri"
   EURI_EMBEDDING_MODEL: "gemini-embedding-2-preview"

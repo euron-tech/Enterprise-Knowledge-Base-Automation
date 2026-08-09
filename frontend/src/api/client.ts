@@ -36,7 +36,9 @@ export interface ChatResponse {
   tool_calls?: number;
 }
 
-const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+// Same-origin by default: CloudFront proxies the API paths to the ALB, so the
+// browser never makes a cross-origin call and there is no mixed-content problem.
+const BASE = import.meta.env.VITE_API_BASE ?? "";
 
 /** In memory only — never localStorage, which is readable by any injected script. */
 let accessToken: string | null = null;
@@ -88,4 +90,16 @@ export function search(query: string, topK = 8) {
 
 export function listDocuments() {
   return request("/documents");
+}
+
+
+export interface Health {
+  status: string;
+  checks?: Record<string, string>;
+}
+
+export async function health(): Promise<Health> {
+  const res = await fetch(`${BASE}/readyz`);
+  if (!res.ok) throw new Error(`health check failed (${res.status})`);
+  return (await res.json()) as Health;
 }

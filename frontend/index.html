@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Enterprise Knowledge-Base Automation — grounded, cited answers from your department's documents." />
+    <title>EKBA — Enterprise Knowledge Base</title>
+    <script>
+      // Apply theme before first paint so there is no flash. This is the only
+      // inline script; in production it is allowed by CSP hash, never unsafe-inline.
+      (function () {
+        try {
+          if (localStorage.getItem("ekba-theme") === "dark") {
+            document.documentElement.classList.add("dark");
+          }
+          var hex = localStorage.getItem("ekba-brand");
+          if (hex && /^#?[0-9a-fA-F]{6}$/.test(hex.trim())) {
+            var n = parseInt(hex.replace("#", ""), 16);
+            document.documentElement.style.setProperty(
+              "--brand",
+              ((n >> 16) & 255) + " " + ((n >> 8) & 255) + " " + (n & 255)
+            );
+          }
+        } catch (e) { /* no-op */ }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
