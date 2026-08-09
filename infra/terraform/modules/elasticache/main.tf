@@ -33,10 +33,12 @@ resource "aws_security_group" "redis" {
 }
 
 # Reference the caller's security group rather than a CIDR.
+# count, not for_each: the security group ids are only known after apply, and
+# for_each keys must be resolvable at plan time.
 resource "aws_vpc_security_group_ingress_rule" "from_app" {
-  for_each                     = toset(var.allowed_security_group_ids)
+  count                        = length(var.allowed_security_group_ids)
   security_group_id            = aws_security_group.redis.id
-  referenced_security_group_id = each.value
+  referenced_security_group_id = var.allowed_security_group_ids[count.index]
   from_port                    = 6379
   to_port                      = 6379
   ip_protocol                  = "tcp"

@@ -5,7 +5,7 @@ terraform {
 
   # Remote state. Create the bucket + lock table once, out of band.
   backend "s3" {
-    bucket         = "ekba-tfstate"
+    bucket         = "ekba-tfstate-471112700629"
     key            = "prod/terraform.tfstate"
     region         = "ap-south-1"
     dynamodb_table = "ekba-tflock"

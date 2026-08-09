@@ -30,8 +30,11 @@ locals {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_s3_bucket" "tfstate" {
-  bucket = "ekba-tfstate"
+  # Account-suffixed: S3 bucket names are globally unique.
+  bucket = "ekba-tfstate-${data.aws_caller_identity.current.account_id}"
   tags   = local.tags
 
   lifecycle {
