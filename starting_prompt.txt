@@ -1,0 +1,318 @@
+That you have to work on a project, but before that, you have to create:                              
+  - a CLAUDE.md file                                                                                    
+  - a README file                                                                                       
+  - an architecture file                                                                                
+  - a requirements file                                                                                 
+  - a task file                                                                                         
+  - a security file                                                                                     
+  Basically, you have to create a rules file for writing Python code, a security rules file for a       
+  gardeners root rule file for testing infrastructure data form. Again, you have to create a skill file 
+  for the entire end-to-end testing and verification. Plus, you have to create a skill file for our     
+  deployment. At any point in time, you should not delete any infrastructure which is not a part of     
+  this project. That's a rule that you have to follow always, and do not try to delete my AWS secret as 
+  well. Now, below is the project which I am giving you. For this particular project, try to create     
+  this entire structure. Once I am going to check and verify, then only you can start building the      
+  project. Before that, do not start building a project. Frontend - react js                            
+  backend - python , fastapi                                                                            
+  vectordb - quadrant                                                                                   
+  sql db - supabase                                                                                     
+  cache system - elastic cache                                                                          
+  auth - aws cognito                                                                                    
+  hosting system - EKS                                                                                  
+  secret manager -aws secret manager                                                                    
+  git/github - ci/cd                                                                                    
+  IAC - terraform                                                                                       
+  observation - claoudwatch , langsmith                                                                 
+  cloud plateform  - AWS                                                                                
+  embedding - euri ai gateway                                                                           
+  LLM - open ai - euri ai gateway                                                                       
+  Agentic framework - langgraph                                                                         
+  storage - s3                                                                                          
+  testing - pytest                                                                                      
+  bluegreen deployment - aws codedeploy                                                                 
+                                                                                                        
+  Basically I am trying to create an Enterprise Agent Tech RIG massive system.Enterprise Knowledge-Base 
+  Automation This is going to be the name of my project. Now inside this project, what am I supposed    
+  to do?                                                                                                
+  Let's say there is a company, small, big, or maybe middle-scale, with any size. Inside the company    
+  there are departments for HR, operations, finance, legals, and many more. Every department has its    
+  own SOPs, documentation, rules, and knowledge base. They have thousands of documents inside their     
+  documentation, including:                                                                             
+  - tables                                                                                              
+  - images                                                                                              
+  - diagrams                                                                                            
+  - audio files                                                                                         
+  - video files                                                                                         
+  All of these things are available.                                                                    
+  Now I wanted to build a complete knowledge-based agentic RBAC system where anyone with authorization  
+  for a particular department from the admin can come in and ask their query in any language they want. 
+  They will get an answer along with the citation.                                                      
+                                                                                                        
+  It should be able to process PDF, text, Markdown, or any file type. It should store all of these      
+  files in S3 as raw files. It should store all the embeddings in a vector database, as I have already  
+  mentioned. It should use a Gemini embedding model that you will be able to get from a URI AI gateway. 
+                                                                                                        
+  This model has the capability to process all sorts of data:                                           
+  - image                                                                                               
+  - video                                                                                               
+  - audio                                                                                               
+  - text                                                                                                
+  You can try to use a Python library.                                                                  
+  Now for LLM-wise we can try to use our LLM from OpenAI again, coming from an euron AI gateway.        
+  You have to build a system end to end and not just build a system. We have to create a complete       
+  blue-green deployment on AWS using AWS Code Deploy services. I am looking for EKS-based hosting of    
+  this entire platform.                                                                                 
+                                                                                                        
+  These are the things which you are supposed to store inside the vector db                             
+  document_id                                                                                           
+  chunk_id                                                                                              
+  document_name                                                                                         
+  page_number                                                                                           
+  source_uri                                                                                            
+  owner_id                                                                                              
+  tenant_id                                                                                             
+  document_version                                                                                      
+  checksum                                                                                              
+  created_at                                                                                            
+                                                                                                        
+  RAG pipeline                                                                                          
+                                                                                                        
+  Implement the following RAG flow:                                                                     
+                                                                                                        
+  Question                                                                                              
+  → authentication                                                                                      
+  → input validation                                                                                    
+  → prompt-injection scan                                                                               
+  → semantic cache lookup                                                                               
+  → Pinecone retrieval                                                                                  
+  → metadata filtering                                                                                  
+  → relevance threshold                                                                                 
+  → context construction                                                                                
+  → model routing                                                                                       
+  → Bedrock generation                                                                                  
+  → citation validation                                                                                 
+  → output guardrail                                                                                    
+  → token and cost recording                                                                            
+  → LangSmith trace                                                                                     
+  → response                                                                                            
+                                                                                                        
+  The /chat response must contain:                                                                      
+                                                                                                        
+  answer                                                                                                
+  citations                                                                                             
+  retrieved_chunks                                                                                      
+  model_used                                                                                            
+  input_tokens                                                                                          
+  output_tokens                                                                                         
+  estimated_cost                                                                                        
+  latency_ms                                                                                            
+  cache_hit                                                                                             
+  trace_id                                                                                              
+  confidence                                                                                            
+                                                                                                        
+  The assistant must answer only from retrieved context.                                                
+                                                                                                        
+  When the evidence is insufficient, it must respond:                                                   
+                                                                                                        
+  “I could not find enough evidence in the approved documents to answer this question.”                 
+                                                                                                        
+  Never invent a citation.                                                                              
+                                                                                                        
+                                                                                                        
+  Guardrails and AI security                                                                            
+                                                                                                        
+  Implement protection against:                                                                         
+                                                                                                        
+  direct prompt injection                                                                               
+  indirect prompt injection inside uploaded documents                                                   
+  attempts to reveal the system prompt                                                                  
+  attempts to override system instructions                                                              
+  cross-tenant document access                                                                          
+  oversized input                                                                                       
+  unsupported file types                                                                                
+  malicious file names                                                                                  
+  unsafe HTML or script content                                                                         
+  retrieval poisoning                                                                                   
+  excessive token consumption                                                                           
+  sensitive information leakage                                                                         
+                                                                                                        
+                                                                                                        
+  Use Amazon Cognito JWT authentication.                                                                
+                                                                                                        
+  Implement:                                                                                            
+                                                                                                        
+  JWT signature verification                                                                            
+  issuer verification                                                                                   
+  audience/client ID verification                                                                       
+  expiration verification                                                                               
+  role-based access control                                                                             
+  tenant-level authorization                                                                            
+                                                                                                        
+  Roles:                                                                                                
+                                                                                                        
+  user                                                                                                  
+  admin                                                                                                 
+                                                                                                        
+  Rules:                                                                                                
+                                                                                                        
+  users can access only documents belonging to their tenant                                             
+  admins can access operational metrics                                                                 
+  document ownership must be verified before deletion                                                   
+  Pinecone queries must always apply tenant_id filters                                                  
+                                                                                                        
+                                                                                                        
+  API and infrastructure security                                                                       
+                                                                                                        
+  Implement:                                                                                            
+                                                                                                        
+  request validation                                                                                    
+  secure HTTP headers                                                                                   
+  CORS allow-list                                                                                       
+  rate limiting                                                                                         
+  request-body size limits                                                                              
+  upload size limits                                                                                    
+  trusted-host validation                                                                               
+  generic production error responses                                                                    
+  correlation IDs                                                                                       
+  HTTPS-only production access                                                                          
+  least-privilege IAM                                                                                   
+  private RDS networking                                                                                
+  private ElastiCache networking                                                                        
+  encrypted S3 bucket                                                                                   
+  encrypted RDS storage                                                                                 
+  encrypted log groups where practical                                                                  
+  ECR image scanning                                                                                    
+  container running as a non-root user                                                                  
+  no secrets inside Docker images                                                                       
+  no public database endpoints                                                                          
+                                                                                                        
+                                                                                                        
+  Rate limiting and caching                                                                             
+                                                                                                        
+  Implement Redis-based rate limiting.                                                                  
+                                                                                                        
+  Example policies:                                                                                     
+                                                                                                        
+  /chat: 20 requests per minute per user                                                                
+  /search: 40 requests per minute per user                                                              
+  /documents/upload: 5 requests per minute per user                                                     
+  stricter limits for unauthenticated health endpoints if required                                      
+                                                                                                        
+  Implement semantic or deterministic caching for RAG answers.                                          
+                                                                                                        
+  The cache key must account for:                                                                       
+                                                                                                        
+  normalized question                                                                                   
+  tenant_id                                                                                             
+  user permissions where relevant                                                                       
+  document or knowledge-base version                                                                    
+  prompt version                                                                                        
+  model                                                                                                 
+  important generation parameters                                                                       
+                                                                                                        
+  Token monitoring and cost optimization                                                                
+                                                                                                        
+  For every model request, record:                                                                      
+                                                                                                        
+  model                                                                                                 
+  input tokens                                                                                          
+  output tokens                                                                                         
+  estimated cost                                                                                        
+  latency                                                                                               
+  cache status                                                                                          
+  route selected                                                                                        
+  fallback usage                                                                                        
+  tenant                                                                                                
+  prompt version                                                                                        
+  trace ID                                                                                              
+                                                                                                        
+  Observability and production debugging                                                                
+                                                                                                        
+  Integrate LangSmith for:                                                                              
+                                                                                                        
+  end-to-end traces                                                                                     
+  retrieval traces                                                                                      
+  prompt versions                                                                                       
+  retrieved document IDs                                                                                
+  model routing                                                                                         
+  latency                                                                                               
+  token usage                                                                                           
+  user feedback                                                                                         
+  evaluation results                                                                                    
+                                                                                                        
+  Integrate CloudWatch for:                                                                             
+                                                                                                        
+  JSON application logs                                                                                 
+  ECS CPU and memory                                                                                    
+  request count                                                                                         
+  4xx errors                                                                                            
+  5xx errors                                                                                            
+  p50 and p95 latency                                                                                   
+  failed ingestion jobs                                                                                 
+  model failures                                                                                        
+  Pinecone failures                                                                                     
+  cache hit ratio                                                                                       
+  authentication failures                                                                               
+                                                                                                        
+  Create alarms for:                                                                                    
+                                                                                                        
+  unhealthy Eks sks                                                                                     
+  high 5xx rate                                                                                         
+  high latency                                                                                          
+  deployment failure                                                                                    
+  database connection pressure                                                                          
+                                                                                                        
+  Every request must use the same correlation ID across:                                                
+                                                                                                        
+  API response                                                                                          
+  application logs                                                                                      
+  gateway logs                                                                                          
+  LangSmith trace                                                                                       
+  error records                                                                                         
+  Evaluation framework                                                                                  
+                                                                                                        
+  Create a small RAG evaluation dataset in JSONL format.                                                
+                                                                                                        
+  Each record should contain:                                                                           
+                                                                                                        
+  question                                                                                              
+  expected_answer                                                                                       
+  expected_document                                                                                     
+  expected_keywords                                                                                     
+                                                                                                        
+  Create an evaluation script that measures:                                                            
+                                                                                                        
+  retrieval precision                                                                                   
+  retrieval recall or hit rate                                                                          
+  answer relevance                                                                                      
+  faithfulness                                                                                          
+  citation correctness                                                                                  
+  refusal correctness                                                                                   
+  latency                                                                                               
+  token consumption                                                                                     
+  estimated cost                                                                                        
+                                                                                                        
+  Database design                                                                                       
+                                                                                                        
+  Create PostgreSQL models and migrations for:                                                          
+                                                                                                        
+  users                                                                                                 
+  tenants                                                                                               
+  documents                                                                                             
+  ingestion_jobs                                                                                        
+  conversations                                                                                         
+  messages                                                                                              
+  request_usage                                                                                         
+  user_feedback                                                                                         
+  prompt_releases                                                                                       
+  audit_events                                                                                          
+                                                                                                        
+  On top of this, you have to do an end-to-end CI/CD blue-green deployment pipeline. You have to build  
+  it and it should be able to store the secrets automatically. I'm going to give you the secrets in.env 
+  files. It should store them automatically in a secret manager for the first time and we should keep   
+  using the same credentials in the dev and product environments for now.                               
+  This whole automation you have to achieve it with the help of terraform.                              
+                                                                                                        
+                                                                                                        
+                                                                                                        
+  Try to create even a rules file for security if I have missed      
