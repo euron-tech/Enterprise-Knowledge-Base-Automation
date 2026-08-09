@@ -128,3 +128,7 @@ postgres_data/
 *.tar.gz
 *.zip
 sbom.json
+
+# local venv + db
+backend/.venv/
+*.db
